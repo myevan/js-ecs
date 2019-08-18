@@ -212,8 +212,44 @@ class Entity {
     }
 }
 
-class World {
+class EventData {
+    getEventNum() {
+        return 0;
+    }
+}
+
+class EventHandler {
+    recvEvent(evtData) {
+    }
+}
+
+class EventManager
+{
+    constructor() {
+        this.evNumHandlers = new Map();
+    }
+
+    bindEvent(evNum, evHandler) {
+        let foundHandlers = this.evNumHandlers.get(evNum);
+        if (foundHandlers) {
+            foundHandlers.push(evHandler);
+        } else {
+            this.evNumHandlers.set(evNum, [evHandler]);
+        }
+    }
+
+    sendEvent(evData) {
+        let evNum = evData.getEventNum();
+        let foundHandlers = this.evNumHandlers.get(evNum);
+        for (let foundHandler of foundHandlers) {
+            foundHandler.recvEvent(evData);
+        }
+    }
+}
+
+class World extends EventManager {
     constructor(factory, entCap) {
+        super();
         this.factory = factory;
         this.entCap = entCap;
         this.cnumComps = new ComponentStorage();
@@ -341,8 +377,9 @@ class World {
     }
 }
 
-class System {
+class System extends EventHandler {
     constructor(world) {
+        super();
         this.world = world;
     }
 
@@ -381,6 +418,10 @@ class Position {
         this.y = y;
         this.z = z;
     }
+
+    plus(x=0, y=0, z=0) {
+        return new Position(this.x + x, this.y + y, this.z + z);
+    }
 }
 
 class Rotation {
@@ -392,7 +433,7 @@ class Cell {
     static unit = 1;
 
     static fromPosition(pos, val) {
-        return Cell(~~(pos.x / Cell.unit), ~~(pos.y / Cell.unit), val)
+        return new Cell(~~(pos.x / Cell.unit), ~~(pos.y / Cell.unit), val)
     }
     constructor(x, y, value) {
         this.x = x;
@@ -437,6 +478,12 @@ class ValueMap {
         return this.height;
     }
 }
+
+const N_Identity = 1;
+const N_Transform = 2;
+const N_TextScreen = 3;
+const N_Landscape = 4;
+const N_Stage = 5;
 
 class C_Identity extends Component {
     constructor() {
@@ -527,11 +574,30 @@ class C_TextScreen extends Component {
 
 }
 
-const N_Identity = 1;
-const N_Transform = 2;
-const N_TextScreen = 3;
-const N_Landscape = 4;
-const N_Stage = 5;
+const EN_KeyEvent = 1;
+
+const KN_Unknown = 0;
+const KN_Up = 1;
+const KN_Down = 2;
+const KN_Left = 4;
+const KN_Right = 8;
+
+class E_KeyEvent extends EventData {
+    constructor(knum, info) {
+        super();
+        this.knum = knum
+        this.info = info
+    }
+    getEventNum() {
+        return EN_KeyEvent;
+    }
+    getKeyNum() {
+        return this.knum;
+    }
+}
+
+class E_KeyPressed extends E_KeyEvent {
+}
 
 class S_RotRandomMapGenrator extends System {
     start() {
@@ -619,6 +685,14 @@ class S_TextView extends System {
     ];
 
     start() {
+        this._render();
+    }
+
+    update() {
+        this._render();
+    }
+
+    _render() {
         let screen = this.world.getFirstComponent(N_TextScreen);
         let height = screen.getHeight();
         let width = screen.getWidth();
@@ -626,7 +700,7 @@ class S_TextView extends System {
         let landscape = this.world.getFirstComponent(N_Landscape);
         for (let y = 0; y != height; ++y) {
             for (let x = 0; x != width; ++x) {
-                let ch = this.getLandscapeChar(landscape, x, y)
+                let ch = this._getLandscapeChar(landscape, x, y)
                 screen.set(x, y, ch);
             }
         }
@@ -635,12 +709,12 @@ class S_TextView extends System {
         for (let iden of idens) {
             let ent = this.world.get(iden.eid);
             let trans = ent.get(N_Transform);
-            let ch = this.getIdentityChar(iden)
+            let ch = this._getIdentityChar(iden)
             screen.set(trans.pos.x, trans.pos.y, ch);
         }
     }
 
-    getLandscapeChar(landscape, x, y) {
+    _getLandscapeChar(landscape, x, y) {
         let pattern = 0
         if (landscape.isWall(x - 1, y - 1)) {pattern |= 1<<8;}
         if (landscape.isWall(x    , y - 1)) {pattern |= 1<<7;}
@@ -675,7 +749,7 @@ class S_TextView extends System {
         return '?';
     }
 
-    getIdentityChar(iden) {
+    _getIdentityChar(iden) {
         return iden.species;
     }
 }
@@ -696,14 +770,63 @@ class S_ConsoleView extends System {
     }
 }
 
+const CH_CTRL_C = "\u0003";
+const CH_ESC = "\u001b";
+
 class S_RotView extends System {
+    static chKeyNums = {
+        'k': KN_Up,
+        'j': KN_Down,
+        'h': KN_Left,
+        'l': KN_Right,
+    };
+
     constructor(world, display) {
         super(world);
         this.display = display;
     }
 
     start() {
+        this._hideCusor();
+        this._setKeyRawMode();
+
+        process.on("exit", () => {
+            this._moveCursor(process.stdout.rows + 1);
+            this._showCursor();
+        });
+
         this._render();
+    }
+
+    update() {
+        this._render();
+    }
+
+    _setKeyRawMode() {
+        keypress(process.stdin);
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+
+        let _this = this;
+        process.stdin.on("keypress", function(ch, info) {
+            if (ch === CH_CTRL_C || ch === CH_ESC) {
+                process.exit(0);
+            }
+        });
+    }
+    
+    _moveCursor(row) {
+        process.on("exit", function() {
+            process.stdout.write("\x1b[" + row + ";1H");
+        });
+    }
+
+    _hideCusor() {
+        process.stdout.write("\x1b[?25l");
+    }
+
+    _showCursor() {
+        process.stdout.write("\x1b[?25h");
     }
 
     _render() {
@@ -720,7 +843,102 @@ class S_RotView extends System {
     }
 }
 
+class S_Player extends System {
+    constructor(world) {
+        super(world);
+        this.ent = null;
+        this.trans = null;
+        this.world.bindEvent(EN_KeyEvent, this);
+    }
+
+    start() {
+        let ent = this._findPC();
+        if (ent) {
+            this.ent = ent;
+            this.trans = ent.get(N_Transform);
+        }
+    }
+
+    _findPC() {
+        let idens = this.world.getComponents(N_Identity);
+        for (let iden of idens) {
+            let ent = this.world.get(iden.eid);
+            let trans = ent.get(N_Transform);
+            if (iden.species == '@') {
+                return ent;
+            }
+        }
+        return null;
+    }
+
+    recvEvent(evData) {
+        if (evData instanceof(E_KeyPressed)) {
+            let knum = evData.getKeyNum();
+
+            if (knum == KN_Up) {
+                this._move(0, -1);
+            }
+            else if (knum == KN_Down) {
+                this._move(0, +1);
+            }
+            else if (knum == KN_Left) {
+                this._move(-1, 0);
+            }
+            else if (knum == KN_Right) {
+                this._move(+1, 0);
+            }
+        }
+    }
+
+    _move(dx, dy) {
+        let oldPos = this.trans.pos;
+        let newPos = this.trans.pos.plus(dx, dy);
+        this.trans.pos = newPos;
+    }
+}
+
+class RotSchedule {
+    constructor(engine, world, sysMgr) {
+        this.engine = engine;
+        this.world = world;
+        this.sysMgr = sysMgr;
+    }
+    act() {
+    }
+}
+
+class RotAutoSchedule extends RotSchedule {
+    act() {
+        this.sysMgr.update();
+    }
+}
+
+class RotKeyTurnSchedule extends RotSchedule {
+    act() {
+        this.engine.lock();
+
+        let _this = this;
+        let onKey = (ch, info) => {
+            let kNum = S_RotView.chKeyNums[ch];
+            if (kNum) {
+                _this.world.sendEvent(new E_KeyPressed(kNum, info))
+            } else {
+                _this.world.sendEvent(new E_KeyPressed(KN_Unknown, info))
+            }
+            _this.sysMgr.update();
+
+            process.stdin.removeListener("keypress", onKey);
+            _this.engine.unlock();
+        };
+
+        process.stdin.on("keypress", onKey);
+    }
+}
+
 class RotApplication {
+    constructor() {
+        this.world = null;
+    }
     run() {
         let env = Environment.get();
         let width = env.getScreenWidth();
@@ -739,33 +957,35 @@ class RotApplication {
         factory.registerType(N_Stage, C_Stage);
 
         let world = new World(factory, 100);
-        /*
-        let eid = world.spawn([N_Identity, N_Transform]);
-        let ent = world.get(eid);
-        let iden = ent.get(N_Identity);
-        iden.species = '@';
-        let trans = ent.get(N_Transform);
-        trans.pos = (5, 5);
-        */
         let sysMgr = new SystemManager();
         let rotMapGenerator = new S_RotRandomMapGenrator(world);
         let textView = new S_TextView(world);
         let consoleView = new S_ConsoleView(world);
         let rotView = new S_RotView(world, display);
+        let player = new S_Player(world);
         sysMgr.add(rotMapGenerator);
         sysMgr.add(textView);
+        sysMgr.add(player);
         if (env.screenMode == 'TTY') {
             sysMgr.add(rotView);
             sysMgr.start();
-            //var scheduler = new rot.Scheduler.Simple();
-            //scheduler.add(this.player, true);
-            //this.engine = new rot.Engine(scheduler);
-            //this.engine.start();
+
+            var scheduler = new rot.Scheduler.Simple();
+            let engine = new rot.Engine(scheduler);
+            scheduler.add(new RotKeyTurnSchedule(engine, world, sysMgr), true);
+            engine.start();
         } else {
             sysMgr.add(consoleView);
             sysMgr.start();
+
+            var scheduler = new rot.Scheduler.Simple();
+            let engine = new rot.Engine(scheduler);
+            scheduler.add(new RotAutoSchedule(engine, world, sysMgr), true);
+            engine.start();
         }
+
     }
+
 }
 
 app = new RotApplication()
