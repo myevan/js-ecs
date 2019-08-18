@@ -137,6 +137,19 @@ class ComponentList {
             return null;
         }
     }
+    [Symbol.iterator]() {
+        var curComp = this.head;
+
+        return {
+            next: () => {
+                let retComp = curComp;
+                if (curComp) {
+                    curComp = curComp.nextComp;
+                }
+                return { value: retComp, done: !retComp };
+            }
+        };
+    };
 }
 
 class ComponentStorage {
@@ -375,6 +388,23 @@ class Rotation {
     }
 }
 
+class Cell {
+    static unit = 1;
+
+    static fromPosition(pos, val) {
+        return Cell(~~(pos.x / Cell.unit), ~~(pos.y / Cell.unit), val)
+    }
+    constructor(x, y, value) {
+        this.x = x;
+        this.y = y;
+        this.value = value;
+    }
+
+    toPosition() {
+        return new Position(this.x * Cell.unit, this.y * Cell.unit, 0);
+    }
+}
+
 class ValueMap {
     constructor(width, height) {
         this.width = width;
@@ -425,6 +455,123 @@ class C_Transform extends Component {
 }
 
 class C_Landscape extends Component {
+    constructor() {
+        super();
+
+        let env = Environment.get();
+        let tileMap = new ValueMap(env.getScreenWidth(), env.getScreenHeight());
+        tileMap.fill(1);
+        //tileMap.set(1, 1, 0);
+        //tileMap.set(2, 2, 0);
+        this.tileMap = tileMap;
+    }
+
+    setTile(x, y, value) {
+        this.tileMap.set(x, y, value);
+    }
+
+    isWall(x, y) {
+        if (x >= 0 && y >= 0 && x < this.tileMap.width && y < this.tileMap.height) {
+            return this.tileMap.get(x, y) ? true : false;
+        } else {
+            return true;
+        }
+    }
+}
+
+class C_Stage extends Component {
+    constructor() {
+        super();
+
+        let env = Environment.get();
+        let eidMap = new ValueMap(env.getScreenWidth(), env.getScreenHeight());
+        eidMap.fill(0);
+        this.eidMap = eidMap;
+    }
+
+    set(x, y, eid) {
+        this.eidMap.set(x, y, eid);
+    }
+
+    get(x, y) {
+        return this.eidMap.get(x, y);
+    }
+
+}
+
+class C_TextScreen extends Component {
+    constructor() {
+        super();
+
+        let env = Environment.get();
+        let chMap = new ValueMap(env.getScreenWidth(), env.getScreenHeight());
+        chMap.fill(' ');
+        this.chMap = chMap;
+    }
+
+    set(x, y, ch) {
+        this.chMap.set(x, y, ch);
+    }
+
+    get(x, y) {
+        return this.chMap.get(x, y);
+    }
+
+    getWidth() {
+        return this.chMap.getWidth();
+    }
+
+    getHeight() {
+        return this.chMap.getHeight();
+    }
+
+}
+
+const N_Identity = 1;
+const N_Transform = 2;
+const N_TextScreen = 3;
+const N_Landscape = 4;
+const N_Stage = 5;
+
+class S_RotRandomMapGenrator extends System {
+    start() {
+        this._makeLandscapeDungeon();
+    }
+
+    _makeLandscapeDungeon() {
+        let eid = this.world.spawn([N_Landscape, N_Stage, N_TextScreen]);
+        let ent = this.world.get(eid);
+        let landscape = ent.get(N_Landscape);
+        let movableCells = [];
+        let digger = new rot.Map.Digger();
+        var digCallback = function(x, y, value) {
+            landscape.setTile(x, y, value);
+            if (value == 0) {
+                movableCells.push(new Cell(x, y, value));
+            }
+        }
+        digger.create(digCallback.bind(this));
+
+        let stage = ent.get(N_Stage);
+        let regenCells = rot.RNG.shuffle(movableCells);
+        this._makeCharacter(stage, regenCells.pop(), '@');
+    }
+
+    _makeCharacter(stage, cell, species) {
+        let eid = this.world.spawn([N_Identity, N_Transform]);
+        let ent = this.world.get(eid);
+        let iden = ent.get(N_Identity);
+        iden.species = species;
+
+        let trans = ent.get(N_Transform);
+        trans.pos = cell.toPosition();
+
+        stage.set(cell.x, cell.y, eid);
+        return eid;
+    }
+}
+
+class S_TextView extends System {
     static fullMask = parseInt("111" + "111" + "111", 2);
     static patternChars = new Map([
         [parseInt("111" + "111" + "111", 2), ' '], // 9
@@ -471,48 +618,54 @@ class C_Landscape extends Component {
         [parseInt("000" + "010" + "000", 2), '·'],
     ];
 
+    start() {
+        let screen = this.world.getFirstComponent(N_TextScreen);
+        let height = screen.getHeight();
+        let width = screen.getWidth();
 
-    constructor() {
-        super();
+        let landscape = this.world.getFirstComponent(N_Landscape);
+        for (let y = 0; y != height; ++y) {
+            for (let x = 0; x != width; ++x) {
+                let ch = this.getLandscapeChar(landscape, x, y)
+                screen.set(x, y, ch);
+            }
+        }
 
-        let env = Environment.get();
-        let tileMap = new ValueMap(env.getScreenWidth(), env.getScreenHeight());
-        tileMap.fill(1);
-        //tileMap.set(1, 1, 0);
-        //tileMap.set(2, 2, 0);
-        this.tileMap = tileMap;
+        let idens = this.world.getComponents(N_Identity);
+        for (let iden of idens) {
+            let ent = this.world.get(iden.eid);
+            let trans = ent.get(N_Transform);
+            let ch = this.getIdentityChar(iden)
+            screen.set(trans.pos.x, trans.pos.y, ch);
+        }
     }
 
-    getTileMap() {
-        return this.tileMap;
-    }
-
-    getChar(x, y) {
+    getLandscapeChar(landscape, x, y) {
         let pattern = 0
-        if (this.isWall(x - 1, y - 1)) {pattern |= 1<<8;}
-        if (this.isWall(x    , y - 1)) {pattern |= 1<<7;}
-        if (this.isWall(x + 1, y - 1)) {pattern |= 1<<6;}
-        if (this.isWall(x - 1, y    )) {pattern |= 1<<5;}
-        if (this.isWall(x    , y    )) {pattern |= 1<<4;}
-        if (this.isWall(x + 1, y    )) {pattern |= 1<<3;}
-        if (this.isWall(x - 1, y + 1)) {pattern |= 1<<2;}
-        if (this.isWall(x    , y + 1)) {pattern |= 1<<1;}
-        if (this.isWall(x + 1, y + 1)) {pattern |= 1<<0;}
+        if (landscape.isWall(x - 1, y - 1)) {pattern |= 1<<8;}
+        if (landscape.isWall(x    , y - 1)) {pattern |= 1<<7;}
+        if (landscape.isWall(x + 1, y - 1)) {pattern |= 1<<6;}
+        if (landscape.isWall(x - 1, y    )) {pattern |= 1<<5;}
+        if (landscape.isWall(x    , y    )) {pattern |= 1<<4;}
+        if (landscape.isWall(x + 1, y    )) {pattern |= 1<<3;}
+        if (landscape.isWall(x - 1, y + 1)) {pattern |= 1<<2;}
+        if (landscape.isWall(x    , y + 1)) {pattern |= 1<<1;}
+        if (landscape.isWall(x + 1, y + 1)) {pattern |= 1<<0;}
 
-        let patternChar = C_Landscape.patternChars.get(pattern);
+        let patternChar = S_TextView.patternChars.get(pattern);
         if (patternChar) {
             return patternChar;
         }
 
-        for (let [mask, ch] of C_Landscape.wallMaskChars) {
+        for (let [mask, ch] of S_TextView.wallMaskChars) {
             let val = pattern & mask;
             if (val == mask) {
                 return ch;
             }
         }
 
-        let revPattern = C_Landscape.fullMask - pattern;
-        for (let [mask, ch] of C_Landscape.spaceMaskChars) {
+        let revPattern = S_TextView.fullMask - pattern;
+        for (let [mask, ch] of S_TextView.spaceMaskChars) {
             let val = revPattern & mask;
             if (val == mask) {
                 return ch;
@@ -522,53 +675,23 @@ class C_Landscape extends Component {
         return '?';
     }
 
-    isWall(x, y) {
-        if (x >= 0 && y >= 0 && x < this.tileMap.width && y < this.tileMap.height) {
-            return this.tileMap.get(x, y) ? true : false;
-        } else {
-            return true;
-        }
-    }
-
-}
-
-const N_Identity = 1;
-const N_Transform = 2;
-const N_Landscape = 3;
-
-class S_RotRandomMapGenrator extends System {
-    start() {
-        let eid = this.world.spawn([N_Landscape]);
-        let ent = this.world.get(eid);
-        let land = ent.get(N_Landscape);
-        let tileMap = land.getTileMap();
-        let digger = new rot.Map.Digger();
-        var digCallback = function(x, y, value) {
-            tileMap.set(x, y, value);
-        }
-        digger.create(digCallback.bind(this));
+    getIdentityChar(iden) {
+        return iden.species;
     }
 }
 
 class S_ConsoleView extends System {
-    constructor(world) {
-        super(world);
-    }
-
     start() {
-        let landscape = this.world.getFirstComponent(N_Landscape);
-        let tileMap = landscape.getTileMap();
-        let height = tileMap.getHeight();
-        let width = tileMap.getWidth();
+        let screen = this.world.getFirstComponent(N_TextScreen);
+        let height = screen.getHeight();
+        let width = screen.getWidth();
         let chars = new Array(width);
-        let rowOffset = 0;
         for (let y = 0; y != height; ++y) {
             for (let x = 0; x != width; ++x) {
-                chars[x] = landscape.getChar(x, y);
+                chars[x] = screen.get(x, y);
             }
             let line = chars.join('');
             console.log(line);
-            rowOffset += width;
         }
     }
 }
@@ -584,18 +707,15 @@ class S_RotView extends System {
     }
 
     _render() {
-        let landscape = this.world.getFirstComponent(N_Landscape);
-        let tileMap = landscape.getTileMap();
-        let height = tileMap.getHeight();
-        let width = tileMap.getWidth();
+        let screen = this.world.getFirstComponent(N_TextScreen);
+        let height = screen.getHeight();
+        let width = screen.getWidth();
 
-        let rowOffset = 0;
         for (let y = 0; y != height; ++y) {
             for (let x = 0; x != width; ++x) {
-                let ch = landscape.getChar(x, y);
+                let ch = screen.get(x, y);
                 this.display.draw(x, y, ch);
             }
-            rowOffset += width;
         }
     }
 }
@@ -614,21 +734,26 @@ class RotApplication {
         let factory = new Factory();
         factory.registerType(N_Identity, C_Identity);
         factory.registerType(N_Transform, C_Transform);
+        factory.registerType(N_TextScreen, C_TextScreen);
         factory.registerType(N_Landscape, C_Landscape);
+        factory.registerType(N_Stage, C_Stage);
 
         let world = new World(factory, 100);
+        /*
         let eid = world.spawn([N_Identity, N_Transform]);
         let ent = world.get(eid);
         let iden = ent.get(N_Identity);
         iden.species = '@';
         let trans = ent.get(N_Transform);
         trans.pos = (5, 5);
-
+        */
         let sysMgr = new SystemManager();
-        let rotView = new S_RotView(world, display);
         let rotMapGenerator = new S_RotRandomMapGenrator(world);
+        let textView = new S_TextView(world);
         let consoleView = new S_ConsoleView(world);
+        let rotView = new S_RotView(world, display);
         sysMgr.add(rotMapGenerator);
+        sysMgr.add(textView);
         if (env.screenMode == 'TTY') {
             sysMgr.add(rotView);
             sysMgr.start();
