@@ -12,12 +12,16 @@ class Environment {
     }
 
     constructor() {
-        this.screenWidth = process.stdout.columns
-        this.screenHeight = process.stdout.rows
-        if (!this.screenWidth)
-            this.screenWidth = 4 * 3;
-        if (!this.screenHeight)
-            this.screenHeight = 3 * 3;
+        let stdout = process.stdout;
+        if (stdout._type == 'tty') {
+            this.screenMode = 'TTY'
+            this.screenWidth = stdout.columns
+            this.screenHeight = stdout.rows
+        } else {
+            this.screenMode = ''
+            this.screenWidth = 80;
+            this.screenHeight = 25;
+        }
     }
 
     getScreenWidth() {
@@ -421,17 +425,111 @@ class C_Transform extends Component {
 }
 
 class C_Landscape extends Component {
+    static fullMask = parseInt("111" + "111" + "111", 2);
+    static patternChars = new Map([
+        [parseInt("111" + "111" + "111", 2), ' '], // 9
+        [parseInt("111" + "111" + "110", 2), '┌'], // 8
+        [parseInt("110" + "111" + "111", 2), '└'], // 8
+        [parseInt("111" + "111" + "011", 2), '┐'], // 8
+        [parseInt("011" + "111" + "111", 2), '┘'], // 8
+        [parseInt("010" + "011" + "010", 2), '├'], // 4
+        [parseInt("010" + "110" + "010", 2), '┤'], // 4
+        [parseInt("000" + "111" + "010", 2), '┬'], // 4
+        [parseInt("010" + "111" + "000", 2), '┴'], // 4
+        [parseInt("010" + "111" + "010", 2), '┼'], // 4
+        [parseInt("000" + "111" + "000", 2), '─'], // 3
+        [parseInt("010" + "010" + "010", 2), '│'], // 3
+    ]);
+    static wallMaskChars = [
+        //[parseInt("111" + "111" + "111", 2), ' '], // 9
+        //[parseInt("111" + "111" + "110", 2), '┌'], // 8
+        //[parseInt("110" + "111" + "111", 2), '└'], // 8
+        //[parseInt("111" + "111" + "011", 2), '┐'], // 8
+        //[parseInt("011" + "111" + "111", 2), '┘'], // 8
+        [parseInt("110" + "110" + "110", 2), '│'], // 6
+        [parseInt("011" + "011" + "011", 2), '│'], // 6
+        [parseInt("000" + "111" + "111", 2), '─'], // 6
+        [parseInt("111" + "111" + "000", 2), '─'], // 6
+        [parseInt("010" + "111" + "010", 2), '┼'], // 4
+        [parseInt("000" + "111" + "010", 2), '┬'], // 4
+        [parseInt("010" + "111" + "000", 2), '┴'], // 4
+        [parseInt("010" + "011" + "010", 2), '├'], // 4
+        [parseInt("010" + "110" + "010", 2), '┤'], // 4
+        [parseInt("010" + "010" + "010", 2), '│'], // 3
+        [parseInt("000" + "111" + "000", 2), '─'], // 3
+        [parseInt("000" + "011" + "010", 2), '┌'], // 3
+        [parseInt("010" + "011" + "000", 2), '└'], // 3
+        [parseInt("000" + "110" + "010", 2), '┐'], // 3
+        [parseInt("010" + "110" + "000", 2), '┘'], // 3
+        [parseInt("000" + "110" + "000", 2), '─'], // 2
+        [parseInt("010" + "010" + "000", 2), '│'], // 2
+        [parseInt("000" + "010" + "010", 2), '│'], // 2
+        [parseInt("000" + "011" + "000", 2), '─'], // 2
+        [parseInt("000" + "010" + "000", 2), '1'],
+    ];
+    static spaceMaskChars = [
+        [parseInt("000" + "010" + "000", 2), '·'],
+    ];
+
+
     constructor() {
         super();
 
         let env = Environment.get();
         let tileMap = new ValueMap(env.getScreenWidth(), env.getScreenHeight());
-        tileMap.fill('.');
+        tileMap.fill(1);
+        //tileMap.set(1, 1, 0);
+        //tileMap.set(2, 2, 0);
         this.tileMap = tileMap;
     }
+
     getTileMap() {
         return this.tileMap;
     }
+
+    getChar(x, y) {
+        let pattern = 0
+        if (this.isWall(x - 1, y - 1)) {pattern |= 1<<8;}
+        if (this.isWall(x    , y - 1)) {pattern |= 1<<7;}
+        if (this.isWall(x + 1, y - 1)) {pattern |= 1<<6;}
+        if (this.isWall(x - 1, y    )) {pattern |= 1<<5;}
+        if (this.isWall(x    , y    )) {pattern |= 1<<4;}
+        if (this.isWall(x + 1, y    )) {pattern |= 1<<3;}
+        if (this.isWall(x - 1, y + 1)) {pattern |= 1<<2;}
+        if (this.isWall(x    , y + 1)) {pattern |= 1<<1;}
+        if (this.isWall(x + 1, y + 1)) {pattern |= 1<<0;}
+
+        let patternChar = C_Landscape.patternChars.get(pattern);
+        if (patternChar) {
+            return patternChar;
+        }
+
+        for (let [mask, ch] of C_Landscape.wallMaskChars) {
+            let val = pattern & mask;
+            if (val == mask) {
+                return ch;
+            }
+        }
+
+        let revPattern = C_Landscape.fullMask - pattern;
+        for (let [mask, ch] of C_Landscape.spaceMaskChars) {
+            let val = revPattern & mask;
+            if (val == mask) {
+                return ch;
+            }
+        }
+
+        return '?';
+    }
+
+    isWall(x, y) {
+        if (x >= 0 && y >= 0 && x < this.tileMap.width && y < this.tileMap.height) {
+            return this.tileMap.get(x, y) ? true : false;
+        } else {
+            return true;
+        }
+    }
+
 }
 
 const N_Identity = 1;
@@ -462,36 +560,27 @@ class S_ConsoleView extends System {
         let tileMap = landscape.getTileMap();
         let height = tileMap.getHeight();
         let width = tileMap.getWidth();
-        let offset = 0;
+        let chars = new Array(width);
+        let rowOffset = 0;
         for (let y = 0; y != height; ++y) {
-            let line = tileMap.values.slice(offset, offset + width).join('');
+            for (let x = 0; x != width; ++x) {
+                chars[x] = landscape.getChar(x, y);
+            }
+            let line = chars.join('');
             console.log(line);
-            offset += width;
+            rowOffset += width;
         }
     }
 }
 
 class S_RotView extends System {
-    constructor(world) {
+    constructor(world, display) {
         super(world);
-        let env = Environment.get();
-        let width = env.getScreenWidth();
-        let height = env.getScreenHeight(); 
-        this.display = new rot.Display({
-            width: width,
-            height: height,
-            layout: "term"
-        });
-
+        this.display = display;
     }
 
     start() {
         this._render();
-
-        var scheduler = new rot.Scheduler.Simple();
-        //scheduler.add(this.player, true);
-        this.engine = new rot.Engine(scheduler);
-        //this.engine.start();
     }
 
     _render() {
@@ -503,18 +592,24 @@ class S_RotView extends System {
         let rowOffset = 0;
         for (let y = 0; y != height; ++y) {
             for (let x = 0; x != width; ++x) {
-                let colOffset = rowOffset + x;
-                let colValue = tileMap.values[colOffset];
-                this.display.draw(x, y, colValue);
+                let ch = landscape.getChar(x, y);
+                this.display.draw(x, y, ch);
             }
-            offset += width;
+            rowOffset += width;
         }
     }
 }
 
-class Application {
+class RotApplication {
     run() {
-        console.log("hello")
+        let env = Environment.get();
+        let width = env.getScreenWidth();
+        let height = env.getScreenHeight();
+        let display = new rot.Display({
+            width: width,
+            height: height,
+            layout: "term"
+        });
 
         let factory = new Factory();
         factory.registerType(N_Identity, C_Identity);
@@ -530,16 +625,23 @@ class Application {
         trans.pos = (5, 5);
 
         let sysMgr = new SystemManager();
-        let rotView = new S_RotView(world);
+        let rotView = new S_RotView(world, display);
         let rotMapGenerator = new S_RotRandomMapGenrator(world);
         let consoleView = new S_ConsoleView(world);
-        sysMgr.add(rotView);
         sysMgr.add(rotMapGenerator);
-        sysMgr.add(consoleView);
-        sysMgr.start();
-        sysMgr.update();
+        if (env.screenMode == 'TTY') {
+            sysMgr.add(rotView);
+            sysMgr.start();
+            //var scheduler = new rot.Scheduler.Simple();
+            //scheduler.add(this.player, true);
+            //this.engine = new rot.Engine(scheduler);
+            //this.engine.start();
+        } else {
+            sysMgr.add(consoleView);
+            sysMgr.start();
+        }
     }
 }
 
-app = new Application()
+app = new RotApplication()
 app.run()
