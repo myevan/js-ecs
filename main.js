@@ -848,6 +848,7 @@ class S_Player extends System {
         super(world);
         this.ent = null;
         this.trans = null;
+        this.landscape = null;
         this.world.bindEvent(EN_KeyEvent, this);
     }
 
@@ -856,6 +857,7 @@ class S_Player extends System {
         if (ent) {
             this.ent = ent;
             this.trans = ent.get(N_Transform);
+            this.landscape = this.world.getFirstComponent(N_Landscape);
         }
     }
 
@@ -893,6 +895,9 @@ class S_Player extends System {
     _move(dx, dy) {
         let oldPos = this.trans.pos;
         let newPos = this.trans.pos.plus(dx, dy);
+        if (this.landscape.isWall(newPos.x, newPos.y)) {
+            return;
+        }
         this.trans.pos = newPos;
     }
 }
