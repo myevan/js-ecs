@@ -1,4 +1,4 @@
-import { World, Entity, Component, System, SystemManager } from './ecs.mjs';
+import { World, SystemManager } from './ecs.mjs';
 import { ComponentFactory } from './components.mjs'
 import { Environment } from './environment.mjs'
 import { E_KeyPressed } from './events.mjs'
