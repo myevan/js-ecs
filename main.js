@@ -941,9 +941,6 @@ class RotKeyTurnSchedule extends RotSchedule {
 }
 
 class RotApplication {
-    constructor() {
-        this.world = null;
-    }
     run() {
         let env = Environment.get();
         let width = env.getScreenWidth();
@@ -965,13 +962,14 @@ class RotApplication {
         let sysMgr = new SystemManager();
         let rotMapGenerator = new S_RotRandomMapGenrator(world);
         let textView = new S_TextView(world);
-        let consoleView = new S_ConsoleView(world);
-        let rotView = new S_RotView(world, display);
         let player = new S_Player(world);
         sysMgr.add(rotMapGenerator);
         sysMgr.add(textView);
         sysMgr.add(player);
+        console.log(env.screenMode);
+        return;
         if (env.screenMode == 'TTY') {
+            let rotView = new S_RotView(world, display);
             sysMgr.add(rotView);
             sysMgr.start();
 
@@ -980,6 +978,7 @@ class RotApplication {
             scheduler.add(new RotKeyTurnSchedule(engine, world, sysMgr), true);
             engine.start();
         } else {
+            let consoleView = new S_ConsoleView(world);
             sysMgr.add(consoleView);
             sysMgr.start();
 
@@ -990,7 +989,6 @@ class RotApplication {
         }
 
     }
-
 }
 
 app = new RotApplication()
