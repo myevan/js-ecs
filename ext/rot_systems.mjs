@@ -10,10 +10,18 @@ export class S_RotLandscapeManager extends System {
         this.movCells = [];
     }
 
-    makeDungeon() {
+    makeDungeon(inSeed=-1) {
+        if (inSeed >= 0) {
+            this.rot.RNG.setSeed(inSeed);
+        }
+
+        let curSeed = this.rot.RNG.getSeed();
+
         let eid = this.world.spawn([NC_Landscape, NC_Stage, NC_TextScreen]);
         let ent = this.world.get(eid);
         let landscape = ent.get(NC_Landscape);
+        landscape.setSeed(curSeed);
+
         let digger = new this.rot.Map.Digger();
         var digCallback = function(x, y, value) {
             landscape.setTile(x, y, value);

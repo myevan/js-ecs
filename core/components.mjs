@@ -30,6 +30,11 @@ class C_Landscape extends Component {
         //tileMap.set(1, 1, 0);
         //tileMap.set(2, 2, 0);
         this.tileMap = tileMap;
+        this.seed = -1;
+    }
+
+    setSeed(seed) {
+        this.seed = seed;
     }
 
     setTile(x, y, value) {
