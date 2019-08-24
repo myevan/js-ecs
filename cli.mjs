@@ -64,8 +64,13 @@ class RotApplication {
             this.engine = engine;
             this.engine.start();
         } else {
+            /*
             let consoleRdr = new S_ConsoleRenderer(world);
             sysMgr.add(consoleRdr);
+            sysMgr.start();
+            */
+            let displayRdr = new S_RotDisplayRenderer(ROT, world, display);
+            sysMgr.add(displayRdr);
             sysMgr.start();
 
             /*

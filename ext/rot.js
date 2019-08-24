@@ -1566,6 +1566,7 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
       _this8 = _Backend3.call(this) || this;
       _this8._offset = [0, 0];
       _this8._cursor = [-1, -1];
+      _this8._darkSpace = 0; // PROCESS_STDOUT_CJK_BUG_FIX
       _this8._lastColor = "";
       return _this8;
     }
@@ -1610,6 +1611,17 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
         return;
       }
 
+      // PROCESS_STDOUT_CJK_BUG_FIX
+      let cc = ch.charCodeAt(0);
+      let cch = cc >> 8;
+      let cjk = (cch === 0x11 || (cch >= 0x2e && cch <= 0x9f) || (cch >= 0xac && cch <= 0xd7)) || (cc >= 0xa960 && cc <= 0xa97f);
+      if (cjk) {
+        this._darkSpace++;
+      } else {
+
+      }
+      // PROCESS_STDOUT_CJK_BUG_FIX_END
+
       if (dx !== this._cursor[0] || dy !== this._cursor[1]) {
         process.stdout.write(positionToAnsi(dx, dy));
         this._cursor[0] = dx;
@@ -1640,12 +1652,15 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
 
       var chars = [].concat(ch);
       process.stdout.write(chars[0]); // update our position, given that we wrote a character
-
       this._cursor[0]++;
 
-      if (this._cursor[0] >= size[0]) {
+      if (this._cursor[0] >= size[0] - this._darkSpace) {
         this._cursor[0] = 0;
         this._cursor[1]++;
+
+        // PROCESS_STDOUT_CJK_BUG_FIX
+        this._darkSpace = 0;
+        // PROCESS_STDOUT_CJK_BUG_FIX_END
       }
     };
 
@@ -2606,6 +2621,8 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
       var cx = x;
       var cy = y;
       var lines = 1;
+      var cjkPos = "";
+      var cjkBuf = "";
 
       if (!maxWidth) {
         maxWidth = this._options.width - x;
@@ -2621,17 +2638,26 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
           case TYPE_TEXT:
             var isSpace = false,
                 isPrevSpace = false,
+                isCJKChar = false,
+                isPrevCJKChar = false,
                 isFullWidth = false,
                 isPrevFullWidth = false;
 
             for (var i = 0; i < token.value.length; i++) {
               var cc = token.value.charCodeAt(i);
               var c = token.value.charAt(i); // Assign to `true` when the current char is full-width.
-
               isFullWidth = cc > 0xff00 && cc < 0xff61 || cc > 0xffdc && cc < 0xffe8 || cc > 0xffee; // Current char is space, whatever full-width or half-width both are OK.
 
               isSpace = c.charCodeAt(0) == 0x20 || c.charCodeAt(0) == 0x3000; // The previous char is full-width and
               // current char is nether half-width nor a space.
+
+              /*
+              var cch = cc >> 8;
+              isCJKChar = cch === 0x11 || (cch >= 0x2e && cch <= 0x9f) || (cch >= 0xac && cch <= 0xd7);
+              if (isCJKChar) {
+                isFullWidth = true;
+              }
+              */
 
               if (isPrevFullWidth && !isFullWidth && !isSpace) {
                 cx++;
@@ -2639,14 +2665,14 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
               // The current char is full-width and
               // the previous char is not a space.
 
-
               if (isFullWidth && !isPrevSpace) {
                 cx++;
               } // add an extra position
 
-
               this.draw(cx++, cy, c, fg, bg);
+
               isPrevSpace = isSpace;
+              isPrevCJKChar = isCJKChar;
               isPrevFullWidth = isFullWidth;
             }
 
