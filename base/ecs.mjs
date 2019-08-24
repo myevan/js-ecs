@@ -259,8 +259,8 @@ export class World extends EventManager {
         }
         if (tags) {
             for (let tag of tags) {
-                ent.addTag(add);
-                oldEnts = this.taggedEnts.get(name);
+                ent.addTag(tag);
+                let oldEnts = this.taggedEnts.get(name);
                 if (oldEnts) {
                     oldEnts.push(ent);
                 } else {
