@@ -1,19 +1,19 @@
 import { EventData } from '../base/ecs.mjs';
-import { NE_KeyEvent } from './numbers.mjs'
+import { NE_Key } from './numbers.mjs'
 
-export class E_KeyEvent extends EventData {
-    constructor(knum, info) {
+export class E_Key extends EventData {
+    constructor(num, info) {
         super();
-        this.knum = knum
+        this.num = num
         this.info = info
     }
     getEventNum() {
-        return NE_KeyEvent;
+        return NE_Key;
     }
     getKeyNum() {
-        return this.knum;
+        return this.num;
     }
 }
 
-export class E_KeyPressed extends E_KeyEvent {
+export class E_KeyPressed extends E_Key {
 }

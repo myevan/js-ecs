@@ -1,11 +1,8 @@
 import { System } from '../base/ecs.mjs';
 
-import { E_KeyPressed } from './events.mjs';
-
 import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape } from './numbers.mjs'
-import { NE_KeyEvent, NK_Up, NK_Down, NK_Left, NK_Right } from './numbers.mjs';
 
-export class S_TextView extends System {
+export class S_TextScreenRenderer extends System {
     static fullMask = parseInt("111" + "111" + "111", 2);
     static patternChars = new Map([
         [parseInt("111" + "111" + "111", 2), ' '], // 9
@@ -94,20 +91,20 @@ export class S_TextView extends System {
         if (landscape.isWall(x    , y + 1)) {pattern |= 1<<1;}
         if (landscape.isWall(x + 1, y + 1)) {pattern |= 1<<0;}
 
-        let patternChar = S_TextView.patternChars.get(pattern);
+        let patternChar = S_TextScreenRenderer.patternChars.get(pattern);
         if (patternChar) {
             return patternChar;
         }
 
-        for (let [mask, ch] of S_TextView.wallMaskChars) {
+        for (let [mask, ch] of S_TextScreenRenderer.wallMaskChars) {
             let val = pattern & mask;
             if (val == mask) {
                 return ch;
             }
         }
 
-        let revPattern = S_TextView.fullMask - pattern;
-        for (let [mask, ch] of S_TextView.spaceMaskChars) {
+        let revPattern = S_TextScreenRenderer.fullMask - pattern;
+        for (let [mask, ch] of S_TextScreenRenderer.spaceMaskChars) {
             let val = revPattern & mask;
             if (val == mask) {
                 return ch;
@@ -122,7 +119,7 @@ export class S_TextView extends System {
     }
 }
 
-export class S_ConsoleView extends System {
+export class S_ConsoleRenderer extends System {
     start() {
         let screen = this.world.getFirstComponent(NC_TextScreen);
         let height = screen.getHeight();
@@ -135,64 +132,5 @@ export class S_ConsoleView extends System {
             let line = chars.join('');
             console.log(line);
         }
-    }
-}
-
-export class S_Player extends System {
-    constructor(world) {
-        super(world);
-        this.ent = null;
-        this.trans = null;
-        this.landscape = null;
-        this.world.bindEvent(NE_KeyEvent, this);
-    }
-
-    start() {
-        let ent = this._findPC();
-        if (ent) {
-            this.ent = ent;
-            this.trans = ent.get(NC_Transform);
-            this.landscape = this.world.getFirstComponent(NC_Landscape);
-        }
-    }
-
-    _findPC() {
-        let idens = this.world.getComponents(NC_Identity);
-        for (let iden of idens) {
-            let ent = this.world.get(iden.eid);
-            let trans = ent.get(NC_Transform);
-            if (iden.species == '@') {
-                return ent;
-            }
-        }
-        return null;
-    }
-
-    recvEvent(evData) {
-        if (evData instanceof(E_KeyPressed)) {
-            let knum = evData.getKeyNum();
-
-            if (knum == NK_Up) {
-                this._move(0, -1);
-            }
-            else if (knum == NK_Down) {
-                this._move(0, +1);
-            }
-            else if (knum == NK_Left) {
-                this._move(-1, 0);
-            }
-            else if (knum == NK_Right) {
-                this._move(+1, 0);
-            }
-        }
-    }
-
-    _move(dx, dy) {
-        let oldPos = this.trans.pos;
-        let newPos = this.trans.pos.plus(dx, dy);
-        if (this.landscape.isWall(newPos.x, newPos.y)) {
-            return;
-        }
-        this.trans.pos = newPos;
     }
 }

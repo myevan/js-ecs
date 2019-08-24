@@ -1,34 +1,46 @@
-import { World, Entity, Component, System, SystemManager } from './base/ecs.mjs';
-import { ComponentFactory } from './core/components.mjs'
-import { S_TextView, S_Player } from './core/systems.mjs'
-import { E_KeyPressed } from './core/events.mjs'
-import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './core/events.mjs';
-import { S_RotRandomMapGenrator, S_RotView } from './ext/rot_systems.mjs'
+import { World, SystemManager } from './base/ecs.mjs';
 
-class KeyEventFactory {
-    static chKeyNums = {
-        'k': NK_Up,
-        'j': NK_Down,
-        'h': NK_Left,
-        'l': NK_Right,
-    };
+import { C_Factory } from './core/components.mjs'
+import { S_TextScreenRenderer } from './core/systems.mjs'
 
-    createCharacterKeyEvent(ch, info) {
-        let keyNum = KeyEventFactory.chKeyNums[ch];
-        if (keyNum) {
-            return new E_KeyPressed(keyNum, info);
-        } else {
-            return new E_KeyPressed(NK_Unknown, info);
-        }
+import { S_RotDungeonGenerator, S_RotDisplayRenderer } from './ext/rot_systems.mjs'
+
+import { S_Player } from './rpg/rpg_systems.mjs'
+import { E_Factory } from './rpg/rpg_events.mjs'
+
+class WebApplication {
+    constructor() {
+        this.evtFactory = new E_Factory();
+        this.world = null;
+        this.sysMgr = null;
+        this.engine = null;
     }
-}
 
-class RotKeyTurnSchedule {
-    constructor(engine, world, sysMgr) {
-        this.engine = engine;
+    run() {
+        let display = new ROT.Display();
+        document.body.appendChild(display.getContainer());
+
+        let world = new World(C_Factory.get(), 100);
+        let sysMgr = new SystemManager();
+        let dungeonGenerator = new S_RotDungeonGenerator(ROT, world);
+        let screenRenderer = new S_TextScreenRenderer(world);
+        let player = new S_Player(world);
+        sysMgr.add(dungeonGenerator);
+        sysMgr.add(screenRenderer);
+        sysMgr.add(player);
+
+        let displayRenderer = new S_RotDisplayRenderer(ROT, world, display);
+        sysMgr.add(displayRenderer);
+        sysMgr.start();
+
+        var scheduler = new ROT.Scheduler.Simple();
+        let engine = new ROT.Engine(scheduler);
+        scheduler.add(this, true);
+
         this.world = world;
         this.sysMgr = sysMgr;
-        this.keyEventFactory = new KeyEventFactory();
+        this.engine = engine;
+        this.engine.start();
     }
 
     act() {
@@ -37,8 +49,8 @@ class RotKeyTurnSchedule {
     }
 
     handleEvent(e) {
-        let keyEvent = this.keyEventFactory.createCharacterKeyEvent(e.key, e);
-        this.world.sendEvent(keyEvent);
+        let keyEvent = this.evtFactory.createKeyPressedFromCharacter(e.key, e);
+        this.world.sendEvent(keyEvent)
         this.sysMgr.update();
 
         window.removeEventListener("keydown", this);
@@ -46,26 +58,7 @@ class RotKeyTurnSchedule {
     }
 }
 
-window.onload = function() { 
-    let display = new ROT.Display();
-    document.body.appendChild(display.getContainer());
-
-    let factory = ComponentFactory.get();
-    let world = new World(factory, 100);
-    let sysMgr = new SystemManager();
-    let rotMapGenerator = new S_RotRandomMapGenrator(ROT, world);
-    let textView = new S_TextView(world);
-    let player = new S_Player(world);
-    sysMgr.add(rotMapGenerator);
-    sysMgr.add(textView);
-    sysMgr.add(player);
-
-    let rotView = new S_RotView(ROT, world, display);
-    sysMgr.add(rotView);
-    sysMgr.start();
-
-    var scheduler = new ROT.Scheduler.Simple();
-    let engine = new ROT.Engine(scheduler);
-    scheduler.add(new RotKeyTurnSchedule(engine, world, sysMgr), true);
-    engine.start();
+window.onload = function() {
+    let app = new WebApplication();
+    app.run();
 }

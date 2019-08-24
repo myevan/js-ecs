@@ -3,7 +3,7 @@ import { Cell } from '../base/primitives.mjs'
 
 import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape, NC_Stage } from '../core/numbers.mjs'
 
-export class S_RotRandomMapGenrator extends System {
+export class S_RotDungeonGenerator extends System {
     constructor(rot, world) {
         super(world);
         this.rot = rot;
@@ -46,7 +46,7 @@ export class S_RotRandomMapGenrator extends System {
     }
 }
 
-export class S_RotView extends System {
+export class S_RotDisplayRenderer extends System {
     constructor(rot, world, display) {
         super(world);
         this.rot = rot;
