@@ -1,8 +1,9 @@
 import { World, Entity, Component, System, SystemManager } from './base/ecs.mjs';
 import { ComponentFactory } from './core/components.mjs'
+import { S_TextView, S_Player } from './core/systems.mjs'
 import { E_KeyPressed } from './core/events.mjs'
-import { S_RotRandomMapGenrator, S_TextView, S_Player, S_RotView } from './core/systems.mjs'
 import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './core/events.mjs';
+import { S_RotRandomMapGenrator, S_RotView } from './ext/rot_systems.mjs'
 
 class KeyEventFactory {
     static chKeyNums = {

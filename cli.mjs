@@ -3,13 +3,12 @@ import { Environment } from './base/environment.mjs'
 import { ComponentFactory } from './core/components.mjs'
 import { E_KeyPressed } from './core/events.mjs'
 import { S_TextView, S_Player, S_ConsoleView } from './core/systems.mjs'
-import { S_RotView, S_RotRandomMapGenrator } from './core/systems.mjs'
+import { S_RotView, S_RotRandomMapGenrator } from './ext/rot_systems.mjs'
 
 import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './core/events.mjs';
-import { NC_TextScreen } from './core/components.mjs'
 
-import ROT from './core/ext/rot.js'
-import keypress from './core/ext/keypress.js'
+import ROT from './ext/rot.js'
+import keypress from './ext/keypress.js'
 
 const CH_CTRL_C = "\u0003";
 const CH_ESC = "\u001b";
