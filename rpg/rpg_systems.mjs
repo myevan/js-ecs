@@ -20,7 +20,7 @@ export class S_Master extends System {
         this.makeCharacter(regenCell2, 'm', '', ['M']);
 
         //this.world.sendEvent(new E_ActionInvoked("こんにちは"));
-        this.world.sendEvent(new E_ActionInvoked("안녕하세요."));
+        this.world.sendEvent(new E_ActionInvoked("헬로ab월드cd"));
     }
 
     makeCharacter(cell, species, name="", tags=[]) {
