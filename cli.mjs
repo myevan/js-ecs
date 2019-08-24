@@ -1,15 +1,15 @@
-import { World, SystemManager } from './ecs.mjs';
-import { ComponentFactory } from './components.mjs'
-import { Environment } from './environment.mjs'
-import { E_KeyPressed } from './events.mjs'
-import { S_TextView, S_Player, S_ConsoleView } from './systems.mjs'
-import { S_RotView, S_RotRandomMapGenrator } from './systems.mjs'
+import { World, SystemManager } from './base/ecs.mjs';
+import { Environment } from './base/environment.mjs'
+import { ComponentFactory } from './core/components.mjs'
+import { E_KeyPressed } from './core/events.mjs'
+import { S_TextView, S_Player, S_ConsoleView } from './core/systems.mjs'
+import { S_RotView, S_RotRandomMapGenrator } from './core/systems.mjs'
 
-import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './events.mjs';
-import { NC_TextScreen } from './components.mjs'
+import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './core/events.mjs';
+import { NC_TextScreen } from './core/components.mjs'
 
-import ROT from './rot.js'
-import keypress from './keypress.js'
+import ROT from './core/ext/rot.js'
+import keypress from './core/ext/keypress.js'
 
 const CH_CTRL_C = "\u0003";
 const CH_ESC = "\u001b";

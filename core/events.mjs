@@ -1,4 +1,4 @@
-import { EventData } from './ecs.mjs';
+import { EventData } from '../base/ecs.mjs';
 
 export const NE_KeyEvent = 1;
 

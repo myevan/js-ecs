@@ -1,5 +1,6 @@
-import { System } from './ecs.mjs';
-import { Cell } from './primitives.mjs'
+import { System } from '../base/ecs.mjs';
+import { Cell } from '../base/primitives.mjs'
+
 import { E_KeyPressed } from './events.mjs';
 
 import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape, NC_Stage } from './components.mjs'

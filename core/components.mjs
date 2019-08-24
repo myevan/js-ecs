@@ -1,6 +1,6 @@
-import { Component, Factory } from './ecs.mjs';
-import { Environment } from './environment.mjs';
-import { Position, Rotation, ValueMap } from './primitives.mjs'
+import { Component, Factory } from '../base/ecs.mjs';
+import { Environment } from '../base/environment.mjs';
+import { Position, Rotation, ValueMap } from '../base/primitives.mjs'
 
 export const NC_Identity = 1;
 export const NC_Transform = 2;
