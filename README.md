@@ -14,7 +14,7 @@ $ ./cli.sh
 ## web
 
 ```bash
-$ http-server .
+$ ./web.sh
 ```
 
 <http://localhost:8080/>
