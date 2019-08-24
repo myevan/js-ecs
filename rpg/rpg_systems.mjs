@@ -14,7 +14,10 @@ export class S_Master extends System {
     start() {
         this.stage = this.world.getFirstComponent(NC_Stage);
         let regenCell = this.stage.popRegenCell();
-        this.makeCharacter(regenCell, '@', 'I');
+        this.makeCharacter(regenCell, '@', 'I', ['P']);
+
+        let regenCell2 = this.stage.popRegenCell();
+        this.makeCharacter(regenCell2, 'm', '', ['M']);
     }
 
     makeCharacter(cell, species, name="", tags=[]) {
