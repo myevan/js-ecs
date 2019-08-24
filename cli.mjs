@@ -1,11 +1,13 @@
 import { World, SystemManager } from './base/ecs.mjs';
 import { Environment } from './base/environment.mjs'
-import { ComponentFactory } from './core/components.mjs'
+
+import { C_Factory } from './core/components.mjs'
 import { E_KeyPressed } from './core/events.mjs'
 import { S_TextView, S_Player, S_ConsoleView } from './core/systems.mjs'
+import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './core/numbers.mjs';
+
 import { S_RotView, S_RotRandomMapGenrator } from './ext/rot_systems.mjs'
 
-import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './core/events.mjs';
 
 import ROT from './ext/rot.js'
 import keypress from './ext/keypress.js'
@@ -116,7 +118,7 @@ class RotApplication {
             layout: "term"
         });
 
-        let factory = new ComponentFactory();
+        let factory = new C_Factory();
         let world = new World(factory, 100);
         let sysMgr = new SystemManager();
         let rotMapGenerator = new S_RotRandomMapGenrator(ROT, world);

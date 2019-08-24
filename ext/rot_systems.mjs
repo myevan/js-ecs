@@ -1,7 +1,7 @@
 import { System } from '../base/ecs.mjs';
 import { Cell } from '../base/primitives.mjs'
 
-import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape, NC_Stage } from '../core/components.mjs'
+import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape, NC_Stage } from '../core/numbers.mjs'
 
 export class S_RotRandomMapGenrator extends System {
     constructor(rot, world) {

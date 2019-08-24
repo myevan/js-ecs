@@ -2,11 +2,7 @@ import { Component, Factory } from '../base/ecs.mjs';
 import { Environment } from '../base/environment.mjs';
 import { Position, Rotation, ValueMap } from '../base/primitives.mjs'
 
-export const NC_Identity = 1;
-export const NC_Transform = 2;
-export const NC_TextScreen = 3;
-export const NC_Landscape = 4;
-export const NC_Stage = 5;
+import { NC_Identity, NC_Transform, NC_Landscape, NC_Stage, NC_TextScreen } from './numbers.mjs'
 
 class C_Identity extends Component {
     constructor() {
@@ -96,13 +92,13 @@ class C_TextScreen extends Component {
     }
 }
 
-export class ComponentFactory extends Factory {
+export class C_Factory extends Factory {
     static inst;
     static get() {
-        if (!ComponentFactory.inst) {
-            ComponentFactory.inst = new ComponentFactory();
+        if (!C_Factory.inst) {
+            C_Factory.inst = new C_Factory();
         }
-        return ComponentFactory.inst; 
+        return C_Factory.inst; 
     }
     constructor() {
         super();

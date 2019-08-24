@@ -2,8 +2,8 @@ import { System } from '../base/ecs.mjs';
 
 import { E_KeyPressed } from './events.mjs';
 
-import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape, NC_Stage } from './components.mjs'
-import { NE_KeyEvent, NK_Up, NK_Down, NK_Left, NK_Right } from './events.mjs';
+import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape } from './numbers.mjs'
+import { NE_KeyEvent, NK_Up, NK_Down, NK_Left, NK_Right } from './numbers.mjs';
 
 export class S_TextView extends System {
     static fullMask = parseInt("111" + "111" + "111", 2);
