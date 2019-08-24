@@ -1,7 +1,10 @@
 import { System } from '../base/ecs.mjs';
 import { Cell } from '../base/primitives.mjs'
 
-import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape, NC_Stage } from '../core/numbers.mjs'
+import { E_ActionInvoked } from '../core/events.mjs';
+
+import { NC_TextScreen, NC_Landscape, NC_Stage } from '../core/numbers.mjs'
+import { NE_Action } from '../core/numbers.mjs';
 
 export class S_RotLandscapeManager extends System {
     constructor(rot, world) {
@@ -43,6 +46,9 @@ export class S_RotDisplayRenderer extends System {
         super(world);
         this.rot = rot;
         this.display = display;
+        this.msgs = [];
+
+        this.world.bindEvent(NE_Action, this);
     }
 
     start() {
@@ -63,6 +69,22 @@ export class S_RotDisplayRenderer extends System {
                 let ch = screen.get(x, y);
                 this.display.draw(x, y, ch);
             }
+        }
+
+        this._renderMessages();
+    }
+
+    _renderMessages() {
+        for (let y = 0; y != this.msgs.length; ++y) {
+            let msg = this.msgs[this.msgs.length - 1 - y];
+            this.display.drawText(0, y, msg);
+        }
+    }
+
+    recvEvent(evData) {
+        if (evData instanceof(E_ActionInvoked)) {
+            let text = evData.getActionText();
+            this.msgs.push(text);
         }
     }
 }

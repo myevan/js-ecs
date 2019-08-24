@@ -1,4 +1,5 @@
 export const NE_Key = 1;
+export const NE_Action = 2;
 
 export const NK_Unknown = 0;
 export const NK_Up = 1;

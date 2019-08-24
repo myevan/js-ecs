@@ -1,6 +1,9 @@
 import { System } from '../base/ecs.mjs';
 
+import { E_ActionInvoked } from './events.mjs';
+
 import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape } from './numbers.mjs'
+import { NE_Action } from './numbers.mjs';
 
 export class S_TextScreenRenderer extends System {
     static fullMask = parseInt("111" + "111" + "111", 2);
@@ -120,6 +123,11 @@ export class S_TextScreenRenderer extends System {
 }
 
 export class S_ConsoleRenderer extends System {
+    constructor(world) {
+        super(world);
+        this.world.bindEvent(NE_Action, this);
+    }
+
     start() {
         let screen = this.world.getFirstComponent(NC_TextScreen);
         let height = screen.getHeight();
@@ -131,6 +139,13 @@ export class S_ConsoleRenderer extends System {
             }
             let line = chars.join('');
             console.log(line);
+        }
+    }
+
+    recvEvent(evData) {
+        if (evData instanceof(E_ActionInvoked)) {
+            let text = evData.getActionText();
+            console.log(text);
         }
     }
 }

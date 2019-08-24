@@ -1,6 +1,6 @@
 import { System } from '../base/ecs.mjs';
 
-import { E_KeyPressed } from '../core/events.mjs';
+import { E_KeyPressed, E_ActionInvoked } from '../core/events.mjs';
 
 import { NC_Identity, NC_Transform, NC_Landscape, NC_Stage } from '../core/numbers.mjs'
 import { NE_Key, NK_Up, NK_Down, NK_Left, NK_Right } from '../core/numbers.mjs';
@@ -18,6 +18,8 @@ export class S_Master extends System {
 
         let regenCell2 = this.stage.popRegenCell();
         this.makeCharacter(regenCell2, 'm', '', ['M']);
+
+        this.world.sendEvent(new E_ActionInvoked("Master:Characters.Created"));
     }
 
     makeCharacter(cell, species, name="", tags=[]) {
@@ -54,18 +56,18 @@ export class S_Player extends System {
 
     recvEvent(evData) {
         if (evData instanceof(E_KeyPressed)) {
-            let knum = evData.getKeyNum();
+            let num = evData.getKeyNum();
 
-            if (knum == NK_Up) {
+            if (num == NK_Up) {
                 this._move(0, -1);
             }
-            else if (knum == NK_Down) {
+            else if (num == NK_Down) {
                 this._move(0, +1);
             }
-            else if (knum == NK_Left) {
+            else if (num == NK_Left) {
                 this._move(-1, 0);
             }
-            else if (knum == NK_Right) {
+            else if (num == NK_Right) {
                 this._move(+1, 0);
             }
         }
@@ -75,6 +77,7 @@ export class S_Player extends System {
         let oldPos = this.trans.pos;
         let newPos = this.trans.pos.plus(dx, dy);
         if (this.landscape.isWall(newPos.x, newPos.y)) {
+            this.world.sendEvent(new E_ActionInvoked("Player:collision!"))
             return;
         }
         this.trans.pos = newPos;
