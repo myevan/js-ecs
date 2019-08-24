@@ -53,14 +53,28 @@ class C_Stage extends Component {
         let eidMap = new ValueMap(env.getScreenWidth(), env.getScreenHeight());
         eidMap.fill(0);
         this.eidMap = eidMap;
+        this.movCells = [];
+        this.regenCells = [];
     }
 
-    set(x, y, eid) {
+    setEntity(x, y, eid) {
         this.eidMap.set(x, y, eid);
     }
 
-    get(x, y) {
+    getEntity(x, y) {
         return this.eidMap.get(x, y);
+    }
+
+    setMovableCells(movCells) {
+        this.movCells = movCells;
+    }
+
+    setRegenCells(regenCells) {
+        this.regenCells = regenCells;
+    }
+
+    popRegenCell() {
+        return this.regenCells.pop();
     }
 
 }

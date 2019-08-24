@@ -7,6 +7,8 @@ export class S_RotDungeonGenerator extends System {
     constructor(rot, world) {
         super(world);
         this.rot = rot;
+        this.movCells = [];
+        this.regenCells = [];
     }
 
     start() {
@@ -17,33 +19,20 @@ export class S_RotDungeonGenerator extends System {
         let eid = this.world.spawn([NC_Landscape, NC_Stage, NC_TextScreen]);
         let ent = this.world.get(eid);
         let landscape = ent.get(NC_Landscape);
-        let movableCells = [];
         let digger = new this.rot.Map.Digger();
         var digCallback = function(x, y, value) {
             landscape.setTile(x, y, value);
             if (value == 0) {
-                movableCells.push(new Cell(x, y, value));
+                this.movCells.push(new Cell(x, y, value));
             }
         }
         digger.create(digCallback.bind(this));
 
         let stage = ent.get(NC_Stage);
-        let regenCells = this.rot.RNG.shuffle(movableCells);
-        this._makeCharacter(stage, regenCells.pop(), '@');
+        stage.setMovableCells(this.movCells);
+        stage.setRegenCells(this.rot.RNG.shuffle(this.movCells));
     }
 
-    _makeCharacter(stage, cell, species) {
-        let eid = this.world.spawn([NC_Identity, NC_Transform]);
-        let ent = this.world.get(eid);
-        let iden = ent.get(NC_Identity);
-        iden.species = species;
-
-        let trans = ent.get(NC_Transform);
-        trans.pos = cell.toPosition();
-
-        stage.set(cell.x, cell.y, eid);
-        return eid;
-    }
 }
 
 export class S_RotDisplayRenderer extends System {

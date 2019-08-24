@@ -8,7 +8,7 @@ import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './core/numbers.mj
 
 import { S_RotDungeonGenerator, S_RotDisplayRenderer } from './ext/rot_systems.mjs'
 
-import { S_Player } from './rpg/rpg_systems.mjs'
+import { S_Master, S_Player } from './rpg/rpg_systems.mjs'
 import { E_Factory } from './rpg/rpg_events.mjs'
 
 import ROT from './ext/rot.js'
@@ -24,14 +24,6 @@ class RotApplication {
         this.sysMgr = null;
     }
     run() {
-        this._hideCusor();
-        this._setKeyRawMode();
-
-        process.on("exit", () => {
-            this._moveCursor(process.stdout.rows + 1);
-            this._showCursor();
-        });
-
         let env = Environment.get();
         let width = env.getScreenWidth();
         let height = env.getScreenHeight();
@@ -45,11 +37,21 @@ class RotApplication {
         let sysMgr = new SystemManager();
         let dungeonGenerator = new S_RotDungeonGenerator(ROT, world);
         let screenRenderer = new S_TextScreenRenderer(world);
+        let master = new S_Master(world);
         let player = new S_Player(world);
         sysMgr.add(dungeonGenerator);
-        sysMgr.add(screenRenderer);
+        sysMgr.add(master);
         sysMgr.add(player);
+        sysMgr.add(screenRenderer);
         if (env.screenMode == 'TTY') {
+            this._hideCusor();
+            this._setKeyRawMode();
+
+            process.on("exit", () => {
+                this._moveCursor(process.stdout.rows + 1);
+                this._showCursor();
+            });
+
             let displayRenderer = new S_RotDisplayRenderer(ROT, world, display);
             sysMgr.add(displayRenderer);
             sysMgr.start();
@@ -64,7 +66,6 @@ class RotApplication {
             this.engine.start();
         } else {
             let consoleRenderer = new S_ConsoleRenderer(world);
-            sysMgr.add(consoleController);
             sysMgr.add(consoleRenderer);
             sysMgr.start();
 
