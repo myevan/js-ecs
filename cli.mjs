@@ -2,11 +2,9 @@ import { World, SystemManager } from './base/ecs.mjs';
 import { Environment } from './base/environment.mjs'
 
 import { C_Factory } from './core/components.mjs'
-import { E_KeyPressed } from './core/events.mjs'
 import { S_TextScreenRenderer, S_ConsoleRenderer } from './core/systems.mjs'
-import { NK_Unknown, NK_Up, NK_Down, NK_Left, NK_Right } from './core/numbers.mjs';
 
-import { S_RotDungeonGenerator, S_RotDisplayRenderer } from './ext/rot_systems.mjs'
+import { S_RotLandscapeManager, S_RotDisplayRenderer } from './ext/rot_systems.mjs'
 
 import { S_Master, S_Player } from './rpg/rpg_systems.mjs'
 import { E_Factory } from './rpg/rpg_events.mjs'
@@ -35,14 +33,15 @@ class RotApplication {
 
         let world = new World(new C_Factory(), 100);
         let sysMgr = new SystemManager();
-        let dungeonGenerator = new S_RotDungeonGenerator(ROT, world);
-        let screenRenderer = new S_TextScreenRenderer(world);
+        let landscapeMgr = new S_RotLandscapeManager(ROT, world);
+        let screenRdr = new S_TextScreenRenderer(world);
         let master = new S_Master(world);
         let player = new S_Player(world);
-        sysMgr.add(dungeonGenerator);
+        landscapeMgr.makeDungeon();
+        sysMgr.add(landscapeMgr);
         sysMgr.add(master);
         sysMgr.add(player);
-        sysMgr.add(screenRenderer);
+        sysMgr.add(screenRdr);
         if (env.screenMode == 'TTY') {
             this._hideCusor();
             this._setKeyRawMode();
@@ -52,8 +51,8 @@ class RotApplication {
                 this._showCursor();
             });
 
-            let displayRenderer = new S_RotDisplayRenderer(ROT, world, display);
-            sysMgr.add(displayRenderer);
+            let displayRdr = new S_RotDisplayRenderer(ROT, world, display);
+            sysMgr.add(displayRdr);
             sysMgr.start();
 
             var scheduler = new ROT.Scheduler.Simple();
@@ -65,8 +64,8 @@ class RotApplication {
             this.engine = engine;
             this.engine.start();
         } else {
-            let consoleRenderer = new S_ConsoleRenderer(world);
-            sysMgr.add(consoleRenderer);
+            let consoleRdr = new S_ConsoleRenderer(world);
+            sysMgr.add(consoleRdr);
             sysMgr.start();
 
             /*

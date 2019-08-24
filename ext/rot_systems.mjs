@@ -3,19 +3,14 @@ import { Cell } from '../base/primitives.mjs'
 
 import { NC_Identity, NC_Transform, NC_TextScreen, NC_Landscape, NC_Stage } from '../core/numbers.mjs'
 
-export class S_RotDungeonGenerator extends System {
+export class S_RotLandscapeManager extends System {
     constructor(rot, world) {
         super(world);
         this.rot = rot;
         this.movCells = [];
-        this.regenCells = [];
     }
 
-    start() {
-        this._makeLandscapeDungeon();
-    }
-
-    _makeLandscapeDungeon() {
+    makeDungeon() {
         let eid = this.world.spawn([NC_Landscape, NC_Stage, NC_TextScreen]);
         let ent = this.world.get(eid);
         let landscape = ent.get(NC_Landscape);
