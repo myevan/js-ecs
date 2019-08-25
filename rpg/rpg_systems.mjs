@@ -8,11 +8,10 @@ import { NE_Key, NK_Up, NK_Down, NK_Left, NK_Right } from '../core/numbers.mjs';
 
 import { Component, Factory } from '../base/ecs.mjs';
 
-class T_Repr {
+class M_Repr {
     static get(chNum) {
         let db = Database.get();
-        let record = db.getRecord('Repr', [chNum]);
-        return new T_Repr(record);
+        return db.getCachedMapper('Repr', [chNum], M_Repr);
     }
     constructor(record) {
         this.record = record;
@@ -86,7 +85,7 @@ export class S_Master extends System {
     }
 
     makeCharacter(cell, rpNum, name="", tags=[]) {
-        let repr = T_Repr.get(rpNum);
+        let repr = M_Repr.get(rpNum);
         let eid = this.world.spawn([NC_Identity, NC_Transform, NC_Status], name, tags);
         let ent = this.world.get(eid);
         let iden = ent.get(NC_Identity);
