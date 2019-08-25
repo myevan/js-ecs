@@ -61,11 +61,19 @@ export class Factory {
 export class Component {
     constructor() {
         this.eid = 0
+        this.cpNum = 0
         this.nextComp = null;
         this.prevComp = null;
     }
-    bind(eid) {
+    bind(cpNum, eid) {
+        this.cpNum = cpNum;
         this.eid = eid;
+    }
+    getComponentNum() {
+        return this.cpNum;
+    }
+    getEntityId() {
+        return this.eid;
     }
     linkNext(newComp) {
         this.nextComp = newComp;
@@ -76,8 +84,8 @@ export class Component {
         newComp.nextComp = this;
     }
     unlink() {
-        prevComp = this.prevComp;
-        nextComp = this.nextComp;
+        let prevComp = this.prevComp;
+        let nextComp = this.nextComp;
         if (prevComp) {
             prevComp.nextComp = nextComp;
         }
@@ -138,6 +146,15 @@ class ComponentList {
             return null;
         }
     }
+    remove(dstComp) {
+        if (this.head == dstComp) {
+            this.popFront();
+        } else if (this.tail == dstComp) {
+            this.popBack();
+        } else {
+            dstComp.unlink();
+        }
+    }
     [Symbol.iterator]() {
         var curComp = this.head;
 
@@ -155,20 +172,26 @@ class ComponentList {
 
 class ComponentStorage {
     constructor() {
-        this.cnumComps = new Map();
+        this.cpNumComps = new Map();
     }
-    add(cnum, newComp) {
-        let oldComps = this.cnumComps.get(cnum);
+    add(cpNum, srcComp) {
+        let oldComps = this.cpNumComps.get(cpNum);
         if (oldComps) {
-            oldComps.pushBack(newComp);
+            oldComps.pushBack(srcComp);
         } else {
             let newComps = new ComponentList();
-            newComps.pushBack(newComp);
-            this.cnumComps.set(cnum, newComps);
+            newComps.pushBack(srcComp);
+            this.cpNumComps.set(cpNum, newComps);
         }
     }
-    get(cnum) {
-        return this.cnumComps.get(cnum)
+    remove(cpNum, dstComp) {
+        let foundComps = this.cpNumComps.get(cpNum);
+        if (foundComps) {
+            foundComps.remove(dstComp);
+        }
+    }
+    get(cpNum) {
+        return this.cpNumComps.get(cpNum)
     }
 }
 
@@ -180,9 +203,6 @@ export class Entity {
     }
     reset() {
         if (this.comps) {
-            for (let [cid, comp] of this.comps) {
-                comp.unlink();
-            }
             this.comps.clear();
         }
         if (this.tags) {
@@ -192,11 +212,11 @@ export class Entity {
             this.name = "";
         }
     }
-    add(cid, newComp) {
-        this.comps[cid] = newComp;
+    add(cpNum, newComp) {
+        this.comps.set(cpNum, newComp);
     }
-    get(cid) {
-        return this.comps[cid];
+    get(cpNum) {
+        return this.comps.get(cpNum);
     }
 
     setName(name) {
@@ -211,6 +231,9 @@ export class Entity {
     getTags() {
         return this.tags;
     }
+    getComponents() {
+        return this.comps.values();
+    }
 }
 
 export class World extends EventManager {
@@ -218,7 +241,7 @@ export class World extends EventManager {
         super();
         this.factory = factory;
         this.entCap = entCap;
-        this.cnumComps = new ComponentStorage();
+        this.cpStorage = new ComponentStorage();
         this.ents = new Array(entCap);
         this.idxFrees = new Array();
         this.seqChecks = new Array(entCap);
@@ -228,7 +251,7 @@ export class World extends EventManager {
         this.namedEnts = new Map();
         this.taggedEnts = new Map();
     }
-    spawn(cnums, name='', tags=[]) {
+    spawn(cpNums, name='', tags=[]) {
         if (this.idxFrees.length == 0) {
             this.idxFrees.push(this.ents.length);
             this.seqChecks.push(0);
@@ -245,11 +268,11 @@ export class World extends EventManager {
         let eidRet = head * this.seqCap + tail;
 
         let ent = this.ents[idxFree];
-        for (let cnum of cnums) {
-            let comp = this.factory.create(cnum);
-            comp.bind(eidRet);
-            ent.add(cnum, comp);
-            this.cnumComps.add(cnum, comp);
+        for (let cpNum of cpNums) {
+            let comp = this.factory.create(cpNum);
+            comp.bind(cpNum, eidRet);
+            ent.add(cpNum, comp);
+            this.cpStorage.add(cpNum, comp);
         }
         this.seqChecks[idxFree] = seqCheck;
 
@@ -260,13 +283,13 @@ export class World extends EventManager {
         if (tags) {
             for (let tag of tags) {
                 ent.addTag(tag);
-                let oldEnts = this.taggedEnts.get(name);
+                let oldEnts = this.taggedEnts.get(tag);
                 if (oldEnts) {
                     oldEnts.add(ent);
                 } else {
-                    let newEnts = new Set();
-                    newEnts.add(ent);
-                    this.taggedEnts.set(name, newEnts);
+                    let newEnts = new Map();
+                    newEnts.set(eidRet, ent);
+                    this.taggedEnts.set(tag, newEnts);
                 }
             }
         }
@@ -281,11 +304,18 @@ export class World extends EventManager {
             if (name) {
                 this.namedEnts.delete(name);
             }
-            let tags = ent.getTag();
+            let tags = ent.getTags();
             if (tags) {
                 for (let tag of tags) {
                     let foundEnts = this.taggedEnts.get(tag);
-                    foundEnts.delete(ent);
+                    foundEnts.delete(eid);
+                }
+            }
+            let comps = ent.getComponents();
+            if (comps) {
+                for (let comp of comps) {
+                    let cpNum = comp.getComponentNum();
+                    this.cpStorage.remove(cpNum, comp);
                 }
             }
             ent.reset();
@@ -312,12 +342,12 @@ export class World extends EventManager {
         }
     }
 
-    getComponents(cnum) {
-        return this.cnumComps.get(cnum);
+    getComponents(cpNum) {
+        return this.cpStorage.get(cpNum);
     }
 
-    getFirstComponent(cnum) {
-        let foundComps = this.cnumComps.get(cnum)
+    getFirstComponent(cpNum) {
+        let foundComps = this.cpStorage.get(cpNum)
         if (foundComps) {
             return foundComps.peekFront();
         } else {
@@ -325,10 +355,10 @@ export class World extends EventManager {
         }
     }
 
-    getNamedComponent(cnum, name) {
+    getNamedComponent(cpNum, name) {
         let ent = this.namedEnts.get(name);
         if (ent) {
-            return ent.get(cnum);
+            return ent.get(cpNum);
         } else {
             return null;
         }
