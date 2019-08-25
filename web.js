@@ -26,6 +26,7 @@ class WebApplication {
         let screenRdr = new S_TextScreenRenderer(world);
         let master = new S_Master(world);
         let player = new S_Player(world);
+        // DEBUG: landscapeMgr.makeDungeon(1234);
         landscapeMgr.makeDungeon();
         sysMgr.add(landscapeMgr);
         sysMgr.add(master);
