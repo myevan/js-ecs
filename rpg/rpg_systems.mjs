@@ -29,7 +29,7 @@ export class S_Master extends System {
 
     start() {
         this.landscape = this.world.getFirstComponent(NC_Landscape);
-        this.world.infoLog("지형이 준비되었습니다.");
+        this.world.infoLog(`지형[${this.landscape.getSeed()}]이 준비되었습니다.`);
 
         this.stage = this.world.getFirstComponent(NC_Stage);
 
