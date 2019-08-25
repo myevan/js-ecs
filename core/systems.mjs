@@ -125,17 +125,26 @@ export class S_TextScreenRenderer extends System {
 export class S_ConsoleRenderer extends System {
     constructor(world) {
         super(world);
-        this.world.bindEvent(NE_Action, this);
+        this.world.bindEvent(NE_Action, this)
+        this.screen = null;
     }
 
     start() {
-        let screen = this.world.getFirstComponent(NC_TextScreen);
-        let height = screen.getHeight();
-        let width = screen.getWidth();
+        this.screen = this.world.getFirstComponent(NC_TextScreen);
+        this._render();
+    }
+
+    update() {
+        this._render();
+    }
+
+    _render() {
+        let height = this.screen.getHeight();
+        let width = this.screen.getWidth();
         let chars = new Array(width);
         for (let y = 0; y != height; ++y) {
             for (let x = 0; x != width; ++x) {
-                chars[x] = screen.get(x, y);
+                chars[x] = this.screen.get(x, y);
             }
             let line = chars.join('');
             console.log(line);
