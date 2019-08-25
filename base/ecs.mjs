@@ -293,7 +293,7 @@ export class World extends EventManager {
                 ent.addTag(tag);
                 let oldEnts = this.taggedEnts.get(tag);
                 if (oldEnts) {
-                    oldEnts.add(ent);
+                    oldEnts.set(eidRet, ent);
                 } else {
                     let newEnts = new Map();
                     newEnts.set(eidRet, ent);
