@@ -14,7 +14,6 @@ export class S_RotLandscapeManager extends System {
     }
 
     makeDungeon(inSeed=-1) {
-        inSeed = 1234;
         if (inSeed >= 0) {
             this.rot.RNG.setSeed(inSeed);
         }
