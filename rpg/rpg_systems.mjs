@@ -7,41 +7,49 @@ import { NE_Key, NK_Up, NK_Down, NK_Left, NK_Right } from '../core/numbers.mjs';
 
 import { Component, Factory } from '../base/ecs.mjs';
 
-class C_Health extends Component {
+class C_Status extends Component {
     constructor() {
         super();
-        this.cur = 3; 
-        this.cap = 3;
+        this.curHp = 3; 
+        this.maxHp = 3;
+        this.atk = 1;
+        this.def = 0;
     }
 }
 
-const NC_Health = 21;
+const NC_Status = 21;
 
 export class S_Master extends System {
     constructor(world) {
         super(world)
         this.stage = null;
-        this.world.factory.registerType(NC_Health, C_Health);
+        this.landscape = null;
+        this.world.factory.registerType(NC_Status, C_Status);
     }
 
     start() {
+        this.landscape = this.world.getFirstComponent(NC_Landscape);
+        this.world.infoLog("지형이 준비되었습니다.");
+
         this.stage = this.world.getFirstComponent(NC_Stage);
-        let regenCell = this.stage.popRegenCell();
-        this.makeCharacter(regenCell, '@', 'I', ['P']);
 
         let regenCell2 = this.stage.popRegenCell();
         this.makeCharacter(regenCell2, 'm', '', ['M']);
 
         let regenCell3 = this.stage.popRegenCell();
         this.makeCharacter(regenCell3, 'm', '', ['M']);
+        this.world.infoLog("몬스터들이 생성되었습니다.");
+
+        let regenCell = this.stage.popRegenCell();
+        this.makeCharacter(regenCell, '@', 'I', ['P']);
+        this.world.infoLog("플레이어가 행동을 시작할 수 있습니다.");
 
         //this.world.sendEvent(new E_ActionInvoked("The master has prepared the characters."));
-        this.world.sendEvent(new E_ActionInvoked("마스터가 캐릭터들을 준비 했습니다."));
         //this.world.sendEvent(new E_ActionInvoked("マスターがキャラクターたちを準備しました。"));
     }
 
     makeCharacter(cell, species, name="", tags=[]) {
-        let eid = this.world.spawn([NC_Identity, NC_Transform, NC_Health], name, tags);
+        let eid = this.world.spawn([NC_Identity, NC_Transform, NC_Status], name, tags);
         let ent = this.world.get(eid);
         let iden = ent.get(NC_Identity);
         iden.species = species;
@@ -59,8 +67,10 @@ export class S_Player extends System {
         super(world);
         this.ent = null;
         this.trans = null;
+        this.status = null;
         this.landscape = null;
         this.world.bindEvent(NE_Key, this);
+        this.isFirstKey = false;
     }
 
     start() {
@@ -69,6 +79,7 @@ export class S_Player extends System {
             this.ent = ent;
             this.eid = ent.getEntityId();
             this.trans = ent.get(NC_Transform);
+            this.status = ent.get(NC_Status);
             this.landscape = this.world.getFirstComponent(NC_Landscape);
             this.stage = this.world.getFirstComponent(NC_Stage);
         }
@@ -76,8 +87,9 @@ export class S_Player extends System {
 
     recvEvent(evData) {
         if (evData instanceof(E_KeyPressed)) {
-            let num = evData.getKeyNum();
+            this.world.clearLogs();
 
+            let num = evData.getKeyNum();
             if (num == NK_Up) {
                 this.move(0, -1);
             }
@@ -97,24 +109,24 @@ export class S_Player extends System {
         let posSrc = this.trans.pos;
         let posDst = this.trans.pos.plus(dx, dy);
         if (this.landscape.isWall(posDst.x, posDst.y)) {
-            this.world.sendEvent(new E_ActionInvoked("플레이어가 벽과 부딪혔습니다."))
+            this.world.infoLog("플레이어가 이동 중 벽과 부딪혔습니다.");
             return;
         }
         let eidDst = this.stage.getEntity(posDst.x, posDst.y);
         if (eidDst) {
             let entDst = this.world.get(eidDst);
-            let healthDst = entDst.get(NC_Health);
-            if (healthDst) {
-                healthDst.cur -= 1;
-                if (healthDst.cur > 0) {
-                    this.world.sendEvent(new E_ActionInvoked(`플레이어가 몬스터(남은 HP:${healthDst.cur})를 공격했습니다.`))
+            let statusDst = entDst.get(NC_Status);
+            if (statusDst) {
+                statusDst.curHp -= this.status.atk;
+                if (statusDst.curHp > 0) {
+                    this.world.infoLog(`플레이어가 몬스터(남은 HP:${statusDst.curHp})를 공격했습니다.`);
                 } else {
                     this.world.kill(eidDst);
                     this.stage.setEntity(posDst.x, posDst.y, 0);
-                    this.world.sendEvent(new E_ActionInvoked("플레이어가 몬스터를 죽였습니다."))
+                    this.world.infoLog("플레이어가 몬스터를 죽였습니다.");
                 }
             } else {
-                this.world.sendEvent(new E_ActionInvoked("플레이어가 무엇인가와 부딪혔습니다."))
+                this.world.infoLog("플레이어가 무엇인가와 부딪혔습니다.");
             }
             return;
         }
