@@ -1,4 +1,5 @@
 import { System } from '../base/ecs.mjs';
+import { Database } from '../base/db.mjs';
 
 import { E_KeyPressed, E_ActionInvoked } from '../core/events.mjs';
 
@@ -6,6 +7,23 @@ import { NC_Identity, NC_Transform, NC_Landscape, NC_Stage } from '../core/numbe
 import { NE_Key, NK_Up, NK_Down, NK_Left, NK_Right } from '../core/numbers.mjs';
 
 import { Component, Factory } from '../base/ecs.mjs';
+
+class T_Repr {
+    static get(chNum) {
+        let db = Database.get();
+        let record = db.getRecord('Repr', [chNum]);
+        return new T_Repr(record);
+    }
+    constructor(record) {
+        this.record = record;
+        this.cc = record.getFieldValue('Cc');
+        this.fg = record.getFieldValue('Fg');
+        this.bg = record.getFieldValue('Bg');
+    }
+    getCc() {
+        return this.cc;
+    }
+}
 
 class C_Status extends Component {
     constructor() {
@@ -25,6 +43,25 @@ export class S_Master extends System {
         this.stage = null;
         this.landscape = null;
         this.world.factory.registerType(NC_Status, C_Status);
+
+        let db = Database.get();
+        let schemeMgr = db.getSchemeManager();
+        let tableMgr = db.getTableManager();
+        db.addTable(
+            db.addScheme("Repr", ["RpNum", "Cc", "Fg", "Bg"], ["RpNum"]), 
+            [
+                [1, '@', '', ''],
+                [2, 'm', '', ''],
+            ]
+        );
+
+        db.addTable(
+            db.addScheme("Char", ["ChNum", "SpecId", "MaxHp", "BaseAtk", "BaseDef"], ["ChNum"]), 
+            [
+                [100, 1, 5, 1, 0],
+                [200, 2, 3, 1, 0],
+            ]
+        );
     }
 
     start() {
@@ -34,25 +71,26 @@ export class S_Master extends System {
         this.stage = this.world.getFirstComponent(NC_Stage);
 
         let regenCell2 = this.stage.popRegenCell();
-        this.makeCharacter(regenCell2, 'm', '', ['M']);
+        this.makeCharacter(regenCell2, 2, '', ['M']);
 
         let regenCell3 = this.stage.popRegenCell();
-        this.makeCharacter(regenCell3, 'm', '', ['M']);
+        this.makeCharacter(regenCell3, 2, '', ['M']);
         this.world.infoLog("몬스터들이 생성되었습니다.");
 
         let regenCell = this.stage.popRegenCell();
-        this.makeCharacter(regenCell, '@', 'I', ['P']);
+        this.makeCharacter(regenCell, 1, 'I', ['P']);
         this.world.infoLog("플레이어가 행동을 시작할 수 있습니다.");
 
         //this.world.sendEvent(new E_ActionInvoked("The master has prepared the characters."));
         //this.world.sendEvent(new E_ActionInvoked("マスターがキャラクターたちを準備しました。"));
     }
 
-    makeCharacter(cell, species, name="", tags=[]) {
+    makeCharacter(cell, rpNum, name="", tags=[]) {
+        let repr = T_Repr.get(rpNum);
         let eid = this.world.spawn([NC_Identity, NC_Transform, NC_Status], name, tags);
         let ent = this.world.get(eid);
         let iden = ent.get(NC_Identity);
-        iden.species = species;
+        iden.species = repr.getCc();
 
         let trans = ent.get(NC_Transform);
         trans.pos = cell.toPosition();
