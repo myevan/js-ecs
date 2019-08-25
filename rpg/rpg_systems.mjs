@@ -5,10 +5,23 @@ import { E_KeyPressed, E_ActionInvoked } from '../core/events.mjs';
 import { NC_Identity, NC_Transform, NC_Landscape, NC_Stage } from '../core/numbers.mjs'
 import { NE_Key, NK_Up, NK_Down, NK_Left, NK_Right } from '../core/numbers.mjs';
 
+import { Component, Factory } from '../base/ecs.mjs';
+
+class C_Health extends Component {
+    constructor() {
+        super();
+        this.cur = 3; 
+        this.cap = 3;
+    }
+}
+
+const NC_Health = 21;
+
 export class S_Master extends System {
     constructor(world) {
         super(world)
         this.stage = null;
+        this.world.factory.registerType(NC_Health, C_Health);
     }
 
     start() {
@@ -19,13 +32,16 @@ export class S_Master extends System {
         let regenCell2 = this.stage.popRegenCell();
         this.makeCharacter(regenCell2, 'm', '', ['M']);
 
+        let regenCell3 = this.stage.popRegenCell();
+        this.makeCharacter(regenCell3, 'm', '', ['M']);
+
         //this.world.sendEvent(new E_ActionInvoked("The master has prepared the characters."));
         this.world.sendEvent(new E_ActionInvoked("마스터가 캐릭터들을 준비 했습니다."));
         //this.world.sendEvent(new E_ActionInvoked("マスターがキャラクターたちを準備しました。"));
     }
 
     makeCharacter(cell, species, name="", tags=[]) {
-        let eid = this.world.spawn([NC_Identity, NC_Transform], name, tags);
+        let eid = this.world.spawn([NC_Identity, NC_Transform, NC_Health], name, tags);
         let ent = this.world.get(eid);
         let iden = ent.get(NC_Identity);
         iden.species = species;
@@ -51,8 +67,10 @@ export class S_Player extends System {
         let ent = this.world.getNamedEntity("I");
         if (ent) {
             this.ent = ent;
+            this.eid = ent.getEntityId();
             this.trans = ent.get(NC_Transform);
             this.landscape = this.world.getFirstComponent(NC_Landscape);
+            this.stage = this.world.getFirstComponent(NC_Stage);
         }
     }
 
@@ -76,12 +94,32 @@ export class S_Player extends System {
     }
 
     move(dx, dy) {
-        let oldPos = this.trans.pos;
-        let newPos = this.trans.pos.plus(dx, dy);
-        if (this.landscape.isWall(newPos.x, newPos.y)) {
-            this.world.sendEvent(new E_ActionInvoked("Player:not_moved reason:collision!"))
+        let posSrc = this.trans.pos;
+        let posDst = this.trans.pos.plus(dx, dy);
+        if (this.landscape.isWall(posDst.x, posDst.y)) {
+            this.world.sendEvent(new E_ActionInvoked("플레이어가 벽과 부딪혔습니다."))
             return;
         }
-        this.trans.pos = newPos;
+        let eidDst = this.stage.getEntity(posDst.x, posDst.y);
+        if (eidDst) {
+            let entDst = this.world.get(eidDst);
+            let healthDst = entDst.get(NC_Health);
+            if (healthDst) {
+                healthDst.cur -= 1;
+                if (healthDst.cur > 0) {
+                    this.world.sendEvent(new E_ActionInvoked("플레이어가 대상을 공격했습니다."))
+                } else {
+                    this.world.kill(eidDst);
+                    this.stage.setEntity(posDst.x, posDst.y, 0);
+                    this.world.sendEvent(new E_ActionInvoked("플레이어가 대상을 죽였습니다."))
+                }
+            } else {
+                this.world.sendEvent(new E_ActionInvoked("플레이어가 무엇인가와 부딪혔습니다."))
+            }
+            return;
+        }
+        this.trans.pos = posDst;
+        this.stage.setEntity(posSrc.x, posSrc.y, 0);
+        this.stage.setEntity(posDst.x, posDst.y, this.eid);
     }
 }
