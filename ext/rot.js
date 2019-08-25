@@ -1637,10 +1637,15 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
         this._lastColor = newColor;
       } // write the provided symbol to the display
 
-
-      //var chars = [].concat(ch);
-      process.stdout.write(ch); // update our position, given that we wrote a character
-      this._cursor[0] += ch.length;
+      // CJK_BUG_FIX
+      if (ch === "\t") {
+        // use tab for cjk dark space
+      } else {
+        // CHECKME: var chars = [].concat(ch);
+        process.stdout.write(ch); // update our position, given that we wrote a character
+      }
+      this._cursor[0]++;
+      // CJK_BUG_FIX_END
 
       if (this._cursor[0] >= size[0]) {
         this._cursor[0] = 0;
@@ -2605,8 +2610,6 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
       var cx = x;
       var cy = y;
       var lines = 1;
-      var cjkPos = "";
-      var cjkBuf = "";
 
       if (!maxWidth) {
         maxWidth = this._options.width - x;
@@ -2623,7 +2626,6 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
             var isSpace = false,
                 isPrevSpace = false,
                 isCJKChar = false,
-                isPrevCJKChar = false,
                 isFullWidth = false,
                 isPrevFullWidth = false;
 
@@ -2645,32 +2647,32 @@ function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.crea
                 cx++;
               } // add an extra position
 
+              // CJK_BUG_FIX: use tab for skipping cjk dark space
               var cch = cc >> 8;
               isCJKChar = cch === 0x11 || (cch >= 0x2e && cch <= 0x9f) || (cch >= 0xac && cch <= 0xd7);
               if (isCJKChar) {
-                if (!isPrevCJKChar) {
-                  cjkPos = cx;
+                if (cx  == x + i) {
+                  this.draw(cx + 1, cy, "\t", fg, bg); 
+                  this.draw(x + i, cy, c, fg, bg);
+                } else {
+                  this.draw(cx + 0, cy, "\t", fg, bg);
+                  this.draw(cx + 1, cy, "\t", fg, bg);
+                  this.draw(x + i, cy, c, fg, bg);
                 }
-                cjkBuf += c;
-
-                // delete old characters
-                this.draw(cx++, cy, null, null, bg);
-                this.draw(cx++, cy, null, null, bg);
+                cx += 2;
               } else {
-                if (isPrevCJKChar) {
-                  this.draw(cjkPos, cy, cjkBuf, fg, bg);
-                  cjkBuf = "";
-                  cjkPos = 0;
+                if (cx  == x + i) {
+                  this.draw(cx, cy, c, fg, bg);
+                } else {
+                  this.draw(cx, cy, "\t", fg, bg); 
+                  this.draw(x + i, cy, c, fg, bg);
                 }
-                this.draw(cx++, cy, c, fg, bg);
+                cx++;
               }
+              // CJK_BUG_FIX_END
 
               isPrevSpace = isSpace;
-              isPrevCJKChar = isCJKChar;
               isPrevFullWidth = isFullWidth;
-            }
-            if (cjkBuf) {
-              this.draw(cjkPos, cy, cjkBuf, fg, bg);
             }
             break;
 
