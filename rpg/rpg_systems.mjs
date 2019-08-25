@@ -19,7 +19,9 @@ export class S_Master extends System {
         let regenCell2 = this.stage.popRegenCell();
         this.makeCharacter(regenCell2, 'm', '', ['M']);
 
-        this.world.sendEvent(new E_ActionInvoked("Master:Characters.Created"));
+        //this.world.sendEvent(new E_ActionInvoked("The master has prepared the characters."));
+        this.world.sendEvent(new E_ActionInvoked("마스터가 캐릭터들을 준비 했습니다."));
+        //this.world.sendEvent(new E_ActionInvoked("マスターがキャラクターたちを準備しました。"));
     }
 
     makeCharacter(cell, species, name="", tags=[]) {
