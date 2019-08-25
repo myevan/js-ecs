@@ -47,9 +47,6 @@ export class S_RotDisplayRenderer extends System {
         this.rot = rot;
         this.display = display;
         this.screen = null;
-        this.msgs = [];
-
-        this.world.bindEvent(NE_Action, this);
     }
 
     start() {
@@ -72,20 +69,13 @@ export class S_RotDisplayRenderer extends System {
             }
         }
 
-        this._renderMessages();
+        this._renderLogs();
     }
 
-    _renderMessages() {
-        for (let y = 0; y != this.msgs.length; ++y) {
-            let msg = this.msgs[this.msgs.length - 1 - y];
-            this.display.drawText(0, 0 + y, msg);
-        }
-    }
-
-    recvEvent(evData) {
-        if (evData instanceof(E_ActionInvoked)) {
-            let text = evData.getActionText();
-            this.msgs.push(text);
+    _renderLogs() {
+        for (let y = 0; y != this.world.logs.length; ++y) {
+            let text = this.world.logs[y];
+            this.display.drawText(0, 0 + y, text);
         }
     }
 }
