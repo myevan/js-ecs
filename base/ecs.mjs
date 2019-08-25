@@ -256,6 +256,7 @@ export class World extends EventManager {
         this.idxBase = entCap;
         this.namedEnts = new Map();
         this.taggedEnts = new Map();
+        this.logs = [];
     }
     spawn(cpNums, name='', tags=[]) {
         if (this.idxFrees.length == 0) {
@@ -378,6 +379,18 @@ export class World extends EventManager {
 
     getTaggedEntities(tag) {
         return this.taggedEnts.get(tag);
+    }
+
+    hasLogs() {
+        return this.logs.length != 0;
+    }
+
+    clearLogs()  {
+        this.logs = [];
+    }
+
+    infoLog(text) {
+        this.logs.push(text);
     }
 }
 
