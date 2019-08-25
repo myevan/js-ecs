@@ -107,11 +107,11 @@ export class S_Player extends System {
             if (healthDst) {
                 healthDst.cur -= 1;
                 if (healthDst.cur > 0) {
-                    this.world.sendEvent(new E_ActionInvoked("플레이어가 대상을 공격했습니다."))
+                    this.world.sendEvent(new E_ActionInvoked(`플레이어가 몬스터(남은 HP:${healthDst.cur})를 공격했습니다.`))
                 } else {
                     this.world.kill(eidDst);
                     this.stage.setEntity(posDst.x, posDst.y, 0);
-                    this.world.sendEvent(new E_ActionInvoked("플레이어가 대상을 죽였습니다."))
+                    this.world.sendEvent(new E_ActionInvoked("플레이어가 몬스터를 죽였습니다."))
                 }
             } else {
                 this.world.sendEvent(new E_ActionInvoked("플레이어가 무엇인가와 부딪혔습니다."))
