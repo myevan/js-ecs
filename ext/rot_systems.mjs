@@ -79,7 +79,7 @@ export class S_RotDisplayRenderer extends System {
     _renderMessages() {
         for (let y = 0; y != this.msgs.length; ++y) {
             let msg = this.msgs[this.msgs.length - 1 - y];
-            this.display.drawText(40, 10 + y, msg);
+            this.display.drawText(0, 0 + y, msg);
         }
     }
 
