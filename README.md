@@ -8,6 +8,8 @@ entity-component-system for javascript
 $ ./cli.sh
 ```
 
+![cli](./docs/cli_screen.png)
+
 * move: hjkl
 * exit: esc
 
@@ -18,5 +20,7 @@ $ ./web.sh
 ```
 
 <http://localhost:8080/>
+
+![web](./docs/web_screen.png)
 
 * move: hjkl
