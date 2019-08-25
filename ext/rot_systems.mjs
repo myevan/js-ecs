@@ -46,12 +46,14 @@ export class S_RotDisplayRenderer extends System {
         super(world);
         this.rot = rot;
         this.display = display;
+        this.screen = null;
         this.msgs = [];
 
         this.world.bindEvent(NE_Action, this);
     }
 
     start() {
+        this.screen = this.world.getFirstComponent(NC_TextScreen);
         this._render();
     }
 
@@ -60,13 +62,12 @@ export class S_RotDisplayRenderer extends System {
     }
 
     _render() {
-        let screen = this.world.getFirstComponent(NC_TextScreen);
-        let height = screen.getHeight();
-        let width = screen.getWidth();
+        let height = this.screen.getHeight();
+        let width = this.screen.getWidth();
 
         for (let y = 0; y != height; ++y) {
             for (let x = 0; x != width; ++x) {
-                let ch = screen.get(x, y);
+                let ch = this.screen.get(x, y);
                 this.display.draw(x, y, ch);
             }
         }
