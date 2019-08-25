@@ -64,27 +64,29 @@ class RotApplication {
             this.engine = engine;
             this.engine.start();
         } else {
-            /*
             let consoleRdr = new S_ConsoleRenderer(world);
             sysMgr.add(consoleRdr);
-            sysMgr.start();
-            */
             let displayRdr = new S_RotDisplayRenderer(ROT, world, display);
             sysMgr.add(displayRdr);
             sysMgr.start();
 
-            /*
             var scheduler = new ROT.Scheduler.Simple();
             let engine = new ROT.Engine(scheduler);
-            scheduler.add(new RotAutoSchedule(engine, world, sysMgr), true);
+            scheduler.add(this, false);
+
+            this.world = world;
+            this.sysMgr = sysMgr;
+            this.engine = engine;
             engine.start();
+            /*
+            console.log("!!");
+            player.move(1, 0);
+            sysMgr.update();
             */
         }
     }
 
     act() {
-        this.engine.lock();
-
         let _this = this;
         let onKey = (ch, info) => {
             let keyEvent = _this.eFactory.createKeyPressedFromCharacter(ch, info);
@@ -95,7 +97,15 @@ class RotApplication {
             _this.engine.unlock();
         };
 
-        process.stdin.on("keypress", onKey);
+        let env = Environment.get();
+        if (env.screenMode == 'TTY') {
+            this.engine.lock();
+            process.stdin.on("keypress", onKey);
+        } else {
+            this.engine.lock();
+            _this.sysMgr.update();
+            this.engine.unlock();
+        }
     }
 
     _hideCusor() {
