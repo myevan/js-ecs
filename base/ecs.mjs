@@ -200,6 +200,7 @@ export class Entity {
         this.comps = new Map();
         this.tags = new Set();
         this.name = "";
+        this.eid = 0;
     }
     reset() {
         if (this.comps) {
@@ -212,13 +213,15 @@ export class Entity {
             this.name = "";
         }
     }
+    bind(eid) {
+        this.eid = eid;
+    }
     add(cpNum, newComp) {
         this.comps.set(cpNum, newComp);
     }
     get(cpNum) {
         return this.comps.get(cpNum);
     }
-
     setName(name) {
         this.name = name
     }
@@ -233,6 +236,9 @@ export class Entity {
     }
     getComponents() {
         return this.comps.values();
+    }
+    getEntityId() {
+        return this.eid;
     }
 }
 
@@ -268,6 +274,8 @@ export class World extends EventManager {
         let eidRet = head * this.seqCap + tail;
 
         let ent = this.ents[idxFree];
+        ent.bind(eidRet);
+
         for (let cpNum of cpNums) {
             let comp = this.factory.create(cpNum);
             comp.bind(cpNum, eidRet);
