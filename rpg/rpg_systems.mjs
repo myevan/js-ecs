@@ -19,9 +19,6 @@ class M_Repr {
         this.fg = record.getFieldValue('fg');
         this.bg = record.getFieldValue('bg');
     }
-    getCharCode() {
-        return this.cc;
-    }
 }
 
 class M_Char {
@@ -45,10 +42,19 @@ class M_Char {
 class C_Status extends Component {
     constructor() {
         super();
-        this.curHp = 3; 
-        this.maxHp = 3;
-        this.atk = 1;
+        this.char = null;
+        this.curHp = 0; 
+        this.maxHp = 0;
+        this.atk = 0;
         this.def = 0;
+    }
+
+    setCharacterMapper(char) {
+        this.char = char;
+        this.curHp = char.maxHp; 
+        this.maxHp = char.maxHp;
+        this.atk = char.baseAtk;
+        this.def = char.baseAtk;
     }
 }
 
@@ -109,10 +115,13 @@ export class S_Master extends System {
         let eid = this.world.spawn([NC_Identity, NC_Transform, NC_Status], name, tags);
         let ent = this.world.get(eid);
         let iden = ent.get(NC_Identity);
-        iden.cc = repr.getCharCode();
+        iden.cc = repr.cc;
 
         let trans = ent.get(NC_Transform);
         trans.pos = cell.toPosition();
+
+        let status = ent.get(NC_Status);
+        status.setCharacterMapper(char);
 
         this.stage.setEntity(cell.x, cell.y, eid);
         return eid;
