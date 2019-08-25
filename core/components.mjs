@@ -7,7 +7,7 @@ import { NC_Identity, NC_Transform, NC_Landscape, NC_Stage, NC_TextScreen } from
 class C_Identity extends Component {
     constructor() {
         super();
-        this.species = "";
+        this.cc = "";
         this.name = "";
     }
 }

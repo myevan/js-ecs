@@ -68,8 +68,8 @@ export class S_TextScreenRenderer extends System {
         let landscape = this.world.getFirstComponent(NC_Landscape);
         for (let y = 0; y != height; ++y) {
             for (let x = 0; x != width; ++x) {
-                let ch = this._getLandscapeChar(landscape, x, y)
-                screen.set(x, y, ch);
+                let cc = this._getLandscapeChar(landscape, x, y)
+                screen.set(x, y, cc);
             }
         }
 
@@ -77,8 +77,8 @@ export class S_TextScreenRenderer extends System {
         for (let iden of idens) {
             let ent = this.world.get(iden.eid);
             let trans = ent.get(NC_Transform);
-            let ch = this._getIdentityChar(iden)
-            screen.set(trans.pos.x, trans.pos.y, ch);
+            let cc = this._getIdentityChar(iden)
+            screen.set(trans.pos.x, trans.pos.y, cc);
         }
     }
 
@@ -118,7 +118,7 @@ export class S_TextScreenRenderer extends System {
     }
 
     _getIdentityChar(iden) {
-        return iden.species;
+        return iden.cc;
     }
 }
 

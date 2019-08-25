@@ -19,7 +19,7 @@ class M_Repr {
         this.fg = record.getFieldValue('Fg');
         this.bg = record.getFieldValue('Bg');
     }
-    getCc() {
+    getCharCode() {
         return this.cc;
     }
 }
@@ -89,7 +89,7 @@ export class S_Master extends System {
         let eid = this.world.spawn([NC_Identity, NC_Transform, NC_Status], name, tags);
         let ent = this.world.get(eid);
         let iden = ent.get(NC_Identity);
-        iden.species = repr.getCc();
+        iden.cc = repr.getCharCode();
 
         let trans = ent.get(NC_Transform);
         trans.pos = cell.toPosition();
