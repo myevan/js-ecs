@@ -115,7 +115,8 @@ export class Database {
 
     constructor() {
         this.schemeMgr = new SchemeManager();
-        this.tableMgr = new TableManager();
+        this.tableMgr = new TableManager()
+        this.caches = new Map();
     }
 
     addScheme(name, fields, pks) {
@@ -141,5 +142,30 @@ export class Database {
 
     getTableManager() {
         return this.tableMgr;
+    }
+
+    setCache(key, val) {
+        return this.caches.set(key, val);
+    }
+
+    getCache(key) {
+        return this.caches.get(key);
+    }
+
+    getKey(ns, keys) {
+        return `${ns}:${keys.join(',')}`;
+    }
+
+    getCachedMapper(name, pkVals, mapperType) {
+        let key = this.getKey(name, pkVals);
+        let oldMapper = this.getCache(key);
+        if (oldMapper) {
+            return oldMapper;
+        } else {
+            let foundRecord = this.getRecord(name, pkVals);
+            let newMapper = new mapperType(foundRecord);
+            this.setCache(key, newMapper);
+            return newMapper;
+        }
     }
 }
