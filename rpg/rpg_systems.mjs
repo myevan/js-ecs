@@ -73,17 +73,19 @@ export class S_Master extends System {
         db.addTable(
             db.addScheme("Repr", ["rpNum", "cc", "fg", "bg"], ["rpNum"]), 
             [
-                [1, '@', '', ''],
-                [2, 'h', '', ''],
-                [3, 'm', '', ''],
+                [10, '@', '', ''],
+                [21, 'h', '', ''],
+                [31, 'm', '', ''],
+                [32, 'M', '', ''],
             ]
         );
 
         db.addTable(
             db.addScheme("Char", ["chNum", "rpNum", "maxHp", "baseAtk", "baseDef"], ["chNum"]), 
             [
-                [100, 1, 5, 1, 0],
-                [300, 3, 3, 1, 0],
+                [100, 10, 5, 1, 0],
+                [310, 31, 3, 1, 0],
+                [320, 32, 8, 1, 0],
             ]
         );
     }
@@ -95,10 +97,10 @@ export class S_Master extends System {
         this.stage = this.world.getFirstComponent(NC_Stage);
 
         let regenCell2 = this.stage.popRegenCell();
-        this.makeCharacter(regenCell2, 300, '', ['M']);
+        this.makeCharacter(regenCell2, 310, '', ['M']);
 
         let regenCell3 = this.stage.popRegenCell();
-        this.makeCharacter(regenCell3, 300, '', ['M']);
+        this.makeCharacter(regenCell3, 320, '', ['M']);
         this.world.infoLog("몬스터들이 생성되었습니다.");
 
         let regenCell = this.stage.popRegenCell();
