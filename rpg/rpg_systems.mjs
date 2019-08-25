@@ -9,18 +9,36 @@ import { NE_Key, NK_Up, NK_Down, NK_Left, NK_Right } from '../core/numbers.mjs';
 import { Component, Factory } from '../base/ecs.mjs';
 
 class M_Repr {
-    static get(chNum) {
+    static get(rpNum) {
         let db = Database.get();
-        return db.getCachedMapper('Repr', [chNum], M_Repr);
+        return db.getCachedMapper('Repr', [rpNum], M_Repr);
     }
     constructor(record) {
         this.record = record;
-        this.cc = record.getFieldValue('Cc');
-        this.fg = record.getFieldValue('Fg');
-        this.bg = record.getFieldValue('Bg');
+        this.cc = record.getFieldValue('cc');
+        this.fg = record.getFieldValue('fg');
+        this.bg = record.getFieldValue('bg');
     }
     getCharCode() {
         return this.cc;
+    }
+}
+
+class M_Char {
+    static get(chNum) {
+        let db = Database.get();
+        return db.getCachedMapper('Char', [chNum], M_Char);
+    }
+    constructor(record) {
+        this.record = record;
+        this.rpNum = record.getFieldValue('rpNum');
+        this.maxHp = record.getFieldValue('maxHp');
+        this.baseAtk = record.getFieldValue('baseAtk');
+        this.baseDef = record.getFieldValue('baseDef');
+        this.repr = M_Repr.get(this.rpNum);
+    }
+    getRepr() {
+        return this.repr;
     }
 }
 
@@ -47,18 +65,19 @@ export class S_Master extends System {
         let schemeMgr = db.getSchemeManager();
         let tableMgr = db.getTableManager();
         db.addTable(
-            db.addScheme("Repr", ["RpNum", "Cc", "Fg", "Bg"], ["RpNum"]), 
+            db.addScheme("Repr", ["rpNum", "cc", "fg", "bg"], ["rpNum"]), 
             [
                 [1, '@', '', ''],
-                [2, 'm', '', ''],
+                [2, 'h', '', ''],
+                [3, 'm', '', ''],
             ]
         );
 
         db.addTable(
-            db.addScheme("Char", ["ChNum", "SpecId", "MaxHp", "BaseAtk", "BaseDef"], ["ChNum"]), 
+            db.addScheme("Char", ["chNum", "rpNum", "maxHp", "baseAtk", "baseDef"], ["chNum"]), 
             [
                 [100, 1, 5, 1, 0],
-                [200, 2, 3, 1, 0],
+                [300, 3, 3, 1, 0],
             ]
         );
     }
@@ -70,22 +89,23 @@ export class S_Master extends System {
         this.stage = this.world.getFirstComponent(NC_Stage);
 
         let regenCell2 = this.stage.popRegenCell();
-        this.makeCharacter(regenCell2, 2, '', ['M']);
+        this.makeCharacter(regenCell2, 300, '', ['M']);
 
         let regenCell3 = this.stage.popRegenCell();
-        this.makeCharacter(regenCell3, 2, '', ['M']);
+        this.makeCharacter(regenCell3, 300, '', ['M']);
         this.world.infoLog("몬스터들이 생성되었습니다.");
 
         let regenCell = this.stage.popRegenCell();
-        this.makeCharacter(regenCell, 1, 'I', ['P']);
+        this.makeCharacter(regenCell, 100, 'I', ['P']);
         this.world.infoLog("플레이어가 행동을 시작할 수 있습니다.");
 
         //this.world.sendEvent(new E_ActionInvoked("The master has prepared the characters."));
         //this.world.sendEvent(new E_ActionInvoked("マスターがキャラクターたちを準備しました。"));
     }
 
-    makeCharacter(cell, rpNum, name="", tags=[]) {
-        let repr = M_Repr.get(rpNum);
+    makeCharacter(cell, chNum, name="", tags=[]) {
+        let char = M_Char.get(chNum);
+        let repr = char.getRepr();
         let eid = this.world.spawn([NC_Identity, NC_Transform, NC_Status], name, tags);
         let ent = this.world.get(eid);
         let iden = ent.get(NC_Identity);
