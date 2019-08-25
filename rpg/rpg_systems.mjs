@@ -60,27 +60,28 @@ export class S_Player extends System {
             let num = evData.getKeyNum();
 
             if (num == NK_Up) {
-                this._move(0, -1);
+                this.move(0, -1);
             }
             else if (num == NK_Down) {
-                this._move(0, +1);
+                this.move(0, +1);
             }
             else if (num == NK_Left) {
-                this._move(-1, 0);
+                this.move(-1, 0);
             }
             else if (num == NK_Right) {
-                this._move(+1, 0);
+                this.move(+1, 0);
             }
         }
     }
 
-    _move(dx, dy) {
+    move(dx, dy) {
         let oldPos = this.trans.pos;
         let newPos = this.trans.pos.plus(dx, dy);
         if (this.landscape.isWall(newPos.x, newPos.y)) {
-            this.world.sendEvent(new E_ActionInvoked("Player:collision!"))
+            this.world.sendEvent(new E_ActionInvoked("Player:not_moved reason:collision!"))
             return;
         }
         this.trans.pos = newPos;
+        this.world.sendEvent(new E_ActionInvoked("Player:moved!"))
     }
 }
